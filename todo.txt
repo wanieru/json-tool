@@ -1,0 +1,13 @@
+Arrays have buttons to add new elements
+Hovering on array elements can move them up or down
+Hovering on object keys can toggle whether they're strikethroughed if they're optional
+text fields are object in-line text fields
+number fields are object in-line number fields
+booleans are check boxes
+hovering over values with multiple types shows a dropdown to change type
+enumeration types show a dropdown
+color types show a color picker
+objects and arrays can be collapsed
+line numbers are shown
+
+use tsch to validate data

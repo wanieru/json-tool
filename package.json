@@ -1,0 +1,21 @@
+{
+  "name": "json-tool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc --watch",
+    "webpack-p": "webpack --mode=production",
+    "webpack-d": "webpack --mode=development"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tsch": "github:wanieru/tsch",
+    "typescript": "^4.8.2",
+    "webpack": "^5.74.0"
+  },
+  "devDependencies": {
+    "webpack-cli": "^4.10.0"
+  }
+}
