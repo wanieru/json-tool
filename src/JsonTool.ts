@@ -8,9 +8,11 @@ export class JsonTool
         this.root = document.createElement("div");
 
         this.root.style.fontFamily = "monospace";
-
+        this.root.style.marginLeft = "20px";
+        this.root.classList.add("json-tool");
         element.appendChild(this.root);
         this.rootObject = null;
+        this.createCss(element);
     }
     public load(schema: JsonSchemaProperty, value?: any)
     {
@@ -27,6 +29,24 @@ export class JsonTool
 
         this.root.appendChild(this.rootObject);
         new JsonElement(this.rootObject, schema, value);
+    }
+    private createCss(parent: Element)
+    {
+        const style = document.createElement("style");
+        parent.appendChild(style);
+        style.innerHTML =
+            `
+              .json-tool-block > .json-tool-btn {
+                position: absolute;
+                left: 5px;
+                border: 1px black solid;
+                cursor: pointer;
+                display: block;
+                margin-top: -16px;
+              }
+              .json-tool-block.opened > .json-tool-key {display: block}
+              .json-tool-block.closed > .json-tool-key {display: none}
+`;
     }
 
 
@@ -176,13 +196,9 @@ export class JsonElement
         {
             this.element.style.display = "block";
             this.element.append("{");
-            const object = document.createElement("div");
+            const object = this.createBlock();
             this.element.append(object);
             this.element.append("}");
-
-            object.style.paddingLeft = "25px";
-            object.style.borderLeft = "1px dashed black";
-            object.style.marginLeft = "3px";
 
             for (const key in val ?? {})
             {
@@ -201,13 +217,9 @@ export class JsonElement
         {
             this.element.style.display = "block";
             this.element.append("[");
-            const array = document.createElement("div");
+            const array = this.createBlock();
             this.element.append(array);
             this.element.append("]");
-
-            array.style.paddingLeft = "25px";
-            array.style.borderLeft = "1px dashed black";
-            array.style.marginLeft = "3px";
 
             const arr = val ?? [];
             for (let i = 0; i < arr.length; i++)
@@ -219,6 +231,31 @@ export class JsonElement
         {
             this.element.innerText = `[${type}]`;
         }
+    }
+    private createBlock(): HTMLDivElement
+    {
+        const block = document.createElement("div");
+        block.classList.add("json-tool-block");
+
+        block.style.paddingLeft = "25px";
+        block.style.borderLeft = "1px dashed black";
+        block.style.marginLeft = "3px";
+
+        let opened = false;
+        const collapse = document.createElement("div");
+        block.append(collapse);
+        collapse.classList.add("json-tool-btn");
+        const toggle = () =>
+        {
+            opened = !opened;
+            collapse.innerText = opened ? "-" : "+";
+            block.classList.remove("opened", "closed");
+            block.classList.add(opened ? "opened" : "closed");
+        }
+        collapse.onclick = toggle;
+        toggle();
+
+        return block;
     }
     private createObjectKeyValuePair(key: string | number, schema: JsonSchemaProperty | null, value?: any): HTMLDivElement
     {
@@ -235,6 +272,7 @@ export class JsonElement
         title.innerText = key.toString();
         JsonElement.addDescription(title, schema?.description);
         parent.append(title);
+        parent.classList.add("json-tool-key");
         parent.append(": ");
         const valueElement = document.createElement("div");
         new JsonElement(valueElement, schema, value);
@@ -256,5 +294,6 @@ export class JsonElement
     private setStyle()
     {
         this.element.style.whiteSpace = "pre";
+        this.element.classList.add("json-tool-value");
     }
 }
