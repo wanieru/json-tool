@@ -386,6 +386,16 @@ export class JsonElement
                         const add = document.createElement("div");
                         add.classList.add("json-tool-btn");
                         add.innerText = "≁";
+                        add.onclick = () =>
+                        {
+                            if (this.schema?.properties)
+                            {
+                                const val = this.getValue();
+                                val[key] = JsonElement.getDefaultValue(this.schema.properties[key]).value;
+                                this.setCurrentTypeValue(val);
+                                this.updateElement();
+                            }
+                        };
                         buttons.append(add);
                     }
                 }

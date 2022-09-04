@@ -4,7 +4,7 @@ const tsch_1 = require("tsch");
 const JsonTool_1 = require("./JsonTool");
 window.JsonTool = JsonTool_1.JsonTool;
 const person = tsch_1.tsch.object({
-    name: tsch_1.tsch.string().description("First and Last Name").minLength(4).default("Jeremy Dorn"),
+    name: tsch_1.tsch.string().description("First and Last Name").minLength(4).default("Jeremy Dorn").nullable(),
     age: tsch_1.tsch.number().integer().default(25).min(18).max(99).optional().title("Age").union(tsch_1.tsch.string()),
     favorite_color: tsch_1.tsch.string().color().title("favorite color").default("#ffa500"),
     gender: tsch_1.tsch.string().enumeration(["male", "female", "other"]),
@@ -22,6 +22,6 @@ const personJsonSchema = person.getJsonSchemaProperty();
 const rootElement = document.querySelector("#root");
 if (rootElement) {
     const tool = new JsonTool_1.JsonTool(rootElement);
-    tool.load(personJsonSchema, { age: 2 });
+    tool.load(personJsonSchema);
     window.getValue = () => tool.getValue();
 }

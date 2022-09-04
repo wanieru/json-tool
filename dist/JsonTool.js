@@ -315,6 +315,15 @@ class JsonElement {
                         const add = document.createElement("div");
                         add.classList.add("json-tool-btn");
                         add.innerText = "≁";
+                        add.onclick = () => {
+                            var _a;
+                            if ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.properties) {
+                                const val = this.getValue();
+                                val[key] = JsonElement.getDefaultValue(this.schema.properties[key]).value;
+                                this.setCurrentTypeValue(val);
+                                this.updateElement();
+                            }
+                        };
                         buttons.append(add);
                     }
                 }

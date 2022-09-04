@@ -4,7 +4,7 @@ import { JsonTool } from "./JsonTool";
 (window as any).JsonTool = JsonTool;
 
 const person = tsch.object({
-    name: tsch.string().description("First and Last Name").minLength(4).default("Jeremy Dorn"),
+    name: tsch.string().description("First and Last Name").minLength(4).default("Jeremy Dorn").nullable(),
     age: tsch.number().integer().default(25).min(18).max(99).optional().title("Age").union(tsch.string()),
     favorite_color: tsch.string().color().title("favorite color").default("#ffa500"),
     gender: tsch.string().enumeration(["male", "female", "other"]),
@@ -25,6 +25,6 @@ const rootElement = document.querySelector("#root");
 if (rootElement)
 {
     const tool = new JsonTool(rootElement);
-    tool.load(personJsonSchema, { age: 2 });
+    tool.load(personJsonSchema);
     (window as any).getValue = () => tool.getValue();
 }
