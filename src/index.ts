@@ -4,13 +4,15 @@ import { JsonTool } from "./JsonTool";
 (window as any).JsonTool = JsonTool;
 
 const person = tsch.object({
-    name: tsch.string().description("First and Last Name").minLength(4).default("Jeremy Dorn").nullable(),
+    name: tsch.string().description("First and Last Name").minLength(4).maxLength(6).default("Jeremy Dorn").nullable(),
     age: tsch.number().integer().default(25).min(18).max(99).optional().title("Age").union(tsch.string()),
     favorite_color: tsch.string().color().title("favorite color").default("#ffa500"),
     gender: tsch.string().enumeration(["male", "female", "other"]),
     date: tsch.string().date(),
-    alive: tsch.boolean().optional().nullable().title("Alive").description("If checked, this person is still alive"),
+    alive: tsch.boolean().default(true).nullable().title("Alive").description("If checked, this person is still alive"),
     description: tsch.string().textarea(),
+    password: tsch.string().password(),
+    website: tsch.string().url(),
     email: tsch.string().email(),
     location: tsch.object({
         city: tsch.string().default("San Francisco"),

@@ -254,7 +254,7 @@ class JsonElement {
         }
     }
     updateElement() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2;
         this.objectElements = {};
         this.arrayElements = [];
         this.element.innerHTML = "";
@@ -447,12 +447,14 @@ class JsonElement {
             else if (((_l = this.schema) === null || _l === void 0 ? void 0 : _l.format) === "textarea") {
                 const input = document.createElement("textarea");
                 input.value = val;
+                input.minLength = (_o = (_m = this.schema) === null || _m === void 0 ? void 0 : _m.minLength) !== null && _o !== void 0 ? _o : 0;
+                input.maxLength = (_q = (_p = this.schema) === null || _p === void 0 ? void 0 : _p.maxLength) !== null && _q !== void 0 ? _q : 99999999999999;
                 input.onchange = () => {
                     this.setCurrentTypeValue(input.value);
                 };
                 this.element.append(input);
             }
-            else if (((_m = this.schema) === null || _m === void 0 ? void 0 : _m.format) === "date") {
+            else if (((_r = this.schema) === null || _r === void 0 ? void 0 : _r.format) === "date") {
                 const input = document.createElement("input");
                 input.type = "date";
                 input.onchange = () => {
@@ -465,9 +467,11 @@ class JsonElement {
             else {
                 const input = document.createElement("input");
                 input.type = "text";
-                if (((_o = this.schema) === null || _o === void 0 ? void 0 : _o.format) && ["password", "email", "color"].includes(this.schema.format))
+                if (((_s = this.schema) === null || _s === void 0 ? void 0 : _s.format) && ["password", "email", "color", "url"].includes(this.schema.format))
                     input.type = this.schema.format;
                 input.value = val;
+                input.minLength = (_u = (_t = this.schema) === null || _t === void 0 ? void 0 : _t.minLength) !== null && _u !== void 0 ? _u : 0;
+                input.maxLength = (_w = (_v = this.schema) === null || _v === void 0 ? void 0 : _v.maxLength) !== null && _w !== void 0 ? _w : 99999999999999;
                 input.onchange = () => {
                     this.setCurrentTypeValue(input.value);
                 };
@@ -481,6 +485,8 @@ class JsonElement {
             const input = document.createElement("input");
             input.type = "number";
             input.value = val;
+            input.min = (_z = (_y = (_x = this.schema) === null || _x === void 0 ? void 0 : _x.minimum) === null || _y === void 0 ? void 0 : _y.toString()) !== null && _z !== void 0 ? _z : "";
+            input.max = (_2 = (_1 = (_0 = this.schema) === null || _0 === void 0 ? void 0 : _0.maximum) === null || _1 === void 0 ? void 0 : _1.toString()) !== null && _2 !== void 0 ? _2 : "";
             if (JsonElement.isInteger(this.schema))
                 input.step = "1";
             input.onchange = () => {

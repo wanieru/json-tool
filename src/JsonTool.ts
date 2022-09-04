@@ -543,6 +543,8 @@ export class JsonElement
             {
                 const input = document.createElement("textarea");
                 input.value = val;
+                input.minLength = this.schema?.minLength ?? 0;
+                input.maxLength = this.schema?.maxLength ?? 99999999999999;
                 input.onchange = () =>
                 {
                     this.setCurrentTypeValue(input.value);
@@ -564,8 +566,10 @@ export class JsonElement
             {
                 const input = document.createElement("input");
                 input.type = "text";
-                if (this.schema?.format && ["password", "email", "color"].includes(this.schema.format)) input.type = this.schema.format;
+                if (this.schema?.format && ["password", "email", "color", "url"].includes(this.schema.format)) input.type = this.schema.format;
                 input.value = val;
+                input.minLength = this.schema?.minLength ?? 0;
+                input.maxLength = this.schema?.maxLength ?? 99999999999999;
                 input.onchange = () =>
                 {
                     this.setCurrentTypeValue(input.value);
@@ -582,6 +586,8 @@ export class JsonElement
             const input = document.createElement("input");
             input.type = "number";
             input.value = val;
+            input.min = this.schema?.minimum?.toString() ?? "";
+            input.max = this.schema?.maximum?.toString() ?? "";
             if (JsonElement.isInteger(this.schema)) input.step = "1";
             input.onchange = () =>
             {

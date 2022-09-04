@@ -4,13 +4,15 @@ const tsch_1 = require("tsch");
 const JsonTool_1 = require("./JsonTool");
 window.JsonTool = JsonTool_1.JsonTool;
 const person = tsch_1.tsch.object({
-    name: tsch_1.tsch.string().description("First and Last Name").minLength(4).default("Jeremy Dorn").nullable(),
+    name: tsch_1.tsch.string().description("First and Last Name").minLength(4).maxLength(6).default("Jeremy Dorn").nullable(),
     age: tsch_1.tsch.number().integer().default(25).min(18).max(99).optional().title("Age").union(tsch_1.tsch.string()),
     favorite_color: tsch_1.tsch.string().color().title("favorite color").default("#ffa500"),
     gender: tsch_1.tsch.string().enumeration(["male", "female", "other"]),
     date: tsch_1.tsch.string().date(),
-    alive: tsch_1.tsch.boolean().optional().nullable().title("Alive").description("If checked, this person is still alive"),
+    alive: tsch_1.tsch.boolean().default(true).nullable().title("Alive").description("If checked, this person is still alive"),
     description: tsch_1.tsch.string().textarea(),
+    password: tsch_1.tsch.string().password(),
+    website: tsch_1.tsch.string().url(),
     email: tsch_1.tsch.string().email(),
     location: tsch_1.tsch.object({
         city: tsch_1.tsch.string().default("San Francisco"),
