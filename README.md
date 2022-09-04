@@ -1,15 +1,7 @@
-# 🚀 Welcome to your new awesome project!
+#JsonTool
 
-This project has been created using **webpack-cli**, you can now run
-
+```js
+const tool = new JsonTool(htmlElement);
+tool.load(jsonSchema, jsonValue);
+const value = tool.getValue();
 ```
-npm run build
-```
-
-or
-
-```
-yarn build
-```
-
-to bundle your application
