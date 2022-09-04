@@ -1,6 +1,6 @@
 {
   "name": "@wanieru/json-tool",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simple Json Editor using a Json Schema",
   "main": "index.js",
   "scripts": {
