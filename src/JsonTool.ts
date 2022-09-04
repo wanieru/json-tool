@@ -549,6 +549,6 @@ export class JsonElement
             val = this.currentValues[this.currentType] ?? JsonElement.getDefaultValueForType(this.schema, this.currentType);
         }
         this.currentValues[this.currentType] = val;
-        return;
+        return val;
     }
 }

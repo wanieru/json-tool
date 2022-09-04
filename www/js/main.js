@@ -462,7 +462,7 @@ class JsonElement {
             val = (_a = this.currentValues[this.currentType]) !== null && _a !== void 0 ? _a : JsonElement.getDefaultValueForType(this.schema, this.currentType);
         }
         this.currentValues[this.currentType] = val;
-        return;
+        return val;
     }
 }
 exports.JsonElement = JsonElement;
