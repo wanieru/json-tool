@@ -2,7 +2,7 @@ import { tsch } from "tsch";
 import { JsonTool } from "./JsonTool";
 
 (window as any).JsonTool = JsonTool;
-
+/*
 const person = tsch.object({
     name: tsch.string().description("First and Last Name").minLength(4).maxLength(6).default("Jeremy Dorn").nullable(),
     age: tsch.number().integer().default(25).min(18).max(99).optional().title("Age").union(tsch.string()),
@@ -32,4 +32,4 @@ if (rootElement)
     const tool = new JsonTool(rootElement);
     tool.load(personJsonSchema, { test: 123 });
     (window as any).getValue = () => tool.getValue();
-}
+}*/

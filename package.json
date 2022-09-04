@@ -8,8 +8,8 @@
     "webpack-p": "webpack --mode=production",
     "webpack-d": "webpack --mode=development"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "wanieru",
+  "license": "MIT",
   "dependencies": {
     "tsch": "github:wanieru/tsch",
     "typescript": "^4.8.2",

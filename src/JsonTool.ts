@@ -1,5 +1,4 @@
 import { JsonSchemaProperty } from "tsch/dist/JsonSchemaPropert";
-import { isExpressionWithTypeArguments, setSyntheticTrailingComments } from "typescript";
 export class JsonTool
 {
     private root: HTMLDivElement;
