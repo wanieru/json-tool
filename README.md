@@ -1,7 +1,7 @@
 # JsonTool
 
 ```html
-<script src="json-tool.js"/>
+<script src="https://unpkg.com/@wanieru/json-tool/lib/json-tool.js"/>
 ```
 
 ```js
