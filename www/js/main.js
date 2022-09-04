@@ -15,7 +15,7 @@ class JsonTool {
     constructor(element) {
         this.root = document.createElement("div");
         this.root.style.fontFamily = "monospace";
-        this.root.style.marginLeft = "20px";
+        this.root.style.marginLeft = "30px";
         this.root.classList.add("json-tool");
         element.appendChild(this.root);
         this.rootObject = null;
@@ -31,7 +31,18 @@ class JsonTool {
         }
         this.rootObject = document.createElement("div");
         this.root.appendChild(this.rootObject);
-        new JsonElement(this.rootObject, schema, value);
+        const element = new JsonElement(this.rootObject, schema, value, () => this.onUpdate());
+    }
+    onUpdate() {
+        var _a;
+        console.log("te");
+        if (!this.rootObject)
+            return;
+        let number = 1;
+        (_a = this.rootObject) === null || _a === void 0 ? void 0 : _a.querySelectorAll(".line-number").forEach(e => {
+            e.innerText = number.toString();
+            number++;
+        });
     }
     createCss(parent) {
         const style = document.createElement("style");
@@ -48,11 +59,21 @@ class JsonTool {
                 margin-top: -17px;
                 margin-left: -40px;
                 position: absolute;
+                opacity: 0;
+              }
+              .json-tool-block:hover > .json-tool-btn
+              {
+                opacity: 1;
               }
               .json-tool-value > .json-tool-btn {
                 margin-left: 10px;
                 display: inline-block;
                 position: absolute;
+                opacity :0;
+              }
+              .json-tool-value:hover > .json-tool-btn
+              {
+                opacity :1;
               }
               .json-tool-key > .json-tool-btns {
                 margin-left: -32px;
@@ -60,7 +81,13 @@ class JsonTool {
                 position: absolute;
                 width: 32px;
                 text-align: right;
+                opacity: 0;
               }
+              .json-tool-key:hover > .json-tool-btns
+              {
+                opacity: 1;
+              }
+
               .json-tool-key > .json-tool-btns > .json-tool-btn {
                 display: inline-block;
                 margin-right: 2px;
@@ -68,6 +95,10 @@ class JsonTool {
               .json-tool-value > .json-tool-type
               {
                 float:right;
+                opacity: 0;
+                padding:0;
+                margin:0;
+                border:0;
               }
               .json-tool-value.json-tool-object > .json-tool-type
               {
@@ -75,18 +106,35 @@ class JsonTool {
                 position: absolute;
                 margin-left: 15px;
               }
+              .json-tool-value:hover > .json-tool-type
+              {
+                opacity: 1;
+              }
 
               .json-tool-block.opened > .json-tool-key {display: block}
               .json-tool-block.closed > .json-tool-key {display: none}
+
+              .line-number
+              {
+                position: absolute;
+                left: 0;
+                text-align: right;
+                width: 20px;
+              }
+              .json-tool-value.json-tool-object > .line-number
+              {
+                margin-top: -15px;
+              }
 `;
     }
 }
 exports.JsonTool = JsonTool;
 class JsonElement {
-    constructor(element, schema, value) {
+    constructor(element, schema, value, onUpdate) {
         this.element = element;
         this.setStyle();
         this.schema = schema;
+        this.onUpdate = onUpdate;
         this.currentValues = {};
         this.types = schema ? JsonElement.getDefaultAvailableTypes(schema) : [];
         const actualType = JsonElement.getType(value);
@@ -188,6 +236,7 @@ class JsonElement {
         this.element.childNodes.forEach(c => c.remove());
         this.element.style.display = "inline-block";
         this.element.classList.remove("json-tool-object");
+        this.element.append(this.createLineNumber());
         const type = this.currentType;
         const val = (_a = this.currentValues[type]) !== null && _a !== void 0 ? _a : (this.currentValues[type] = JsonElement.getDefaultValueForType(this.schema, type));
         const select = document.createElement("select");
@@ -199,12 +248,14 @@ class JsonElement {
         }
         this.element.append(select);
         if (type === "object") {
+            this.element.append(this.createLineNumber(true));
             this.element.style.display = "block";
             this.element.classList.add("json-tool-object");
             this.element.append("{");
             const object = this.createBlock();
             this.element.append(object);
             this.element.append("}");
+            this.element.append(this.createLineNumber());
             for (const key in val !== null && val !== void 0 ? val : {}) {
                 const obj = this.createObjectKeyValuePair(key, ((_b = this.schema) === null || _b === void 0 ? void 0 : _b.properties) ? this.schema.properties[key] : null, val[key]);
                 object.append(obj);
@@ -248,6 +299,7 @@ class JsonElement {
             }
         }
         else if (type === "array") {
+            this.element.append(this.createLineNumber(true));
             this.element.style.display = "block";
             this.element.classList.add("json-tool-object");
             this.element.append("[");
@@ -258,6 +310,7 @@ class JsonElement {
             add.innerText = "+";
             this.element.append(add);
             this.element.append("]");
+            this.element.append(this.createLineNumber());
             const arr = val !== null && val !== void 0 ? val : [];
             for (let i = 0; i < arr.length; i++) {
                 const obj = this.createObjectKeyValuePair(i, ((_j = this.schema) === null || _j === void 0 ? void 0 : _j.items) ? this.schema.items : null, val[i]);
@@ -282,6 +335,15 @@ class JsonElement {
         else {
             this.element.append(`[${type}]`);
         }
+        if (this.onUpdate)
+            this.onUpdate();
+    }
+    createLineNumber(overrideMargin = false) {
+        const lineNumber = document.createElement("div");
+        lineNumber.classList.add("line-number");
+        if (overrideMargin)
+            lineNumber.style.marginTop = "0";
+        return lineNumber;
     }
     createBlock() {
         const block = document.createElement("div");
@@ -320,7 +382,7 @@ class JsonElement {
         parent.append(": ");
         if (schema || value) {
             const valueElement = document.createElement("div");
-            new JsonElement(valueElement, schema, value);
+            const element = new JsonElement(valueElement, schema, value, () => this.onUpdate && this.onUpdate());
             parent.append(valueElement);
         }
         return parent;
