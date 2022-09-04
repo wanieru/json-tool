@@ -1,7 +1,7 @@
         Arrays have buttons to add new elements
         Hovering on array elements can move them up or down
         objects and arrays can be collapsed
-    Hovering on object keys can toggle whether they're strikethroughed if they're optional
+        Hovering on object keys can toggle whether they're strikethroughed if they're optional
     hovering over values with multiple types shows a dropdown to change type
 
 text fields are object in-line text fields

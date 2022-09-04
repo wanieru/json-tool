@@ -1,4 +1,5 @@
 import { JsonSchemaProperty } from "tsch/dist/JsonSchemaPropert";
+import { setSyntheticTrailingComments } from "typescript";
 export class JsonTool
 {
     private root: HTMLDivElement;
@@ -255,7 +256,11 @@ export class JsonElement
     }
     private static getDefaultValueForType(schema: JsonSchemaProperty | null, type: string)
     {
-        if (type === "number")
+        if (type === "null")
+        {
+            return null;
+        }
+        else if (type === "number")
         {
             return this.isInteger(schema) ? Math.ceil(schema?.minimum ?? 0) : schema?.minimum ?? 0;
         }
@@ -315,8 +320,16 @@ export class JsonElement
             {
                 const option = document.createElement("option");
                 option.innerText = t;
+                option.value = t;
                 select.append(option);
             }
+            select.value = this.currentType;
+            select.onchange = () =>
+            {
+                this.currentType = select.value;
+                this.setCurrentTypeValue(this.currentValues[this.currentType] ?? JsonElement.getDefaultValueForType(this.schema, this.currentType));
+                this.updateElement();
+            };
             this.element.append(select);
         }
 

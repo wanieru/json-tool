@@ -222,7 +222,10 @@ class JsonElement {
     }
     static getDefaultValueForType(schema, type) {
         var _a, _b, _c;
-        if (type === "number") {
+        if (type === "null") {
+            return null;
+        }
+        else if (type === "number") {
             return this.isInteger(schema) ? Math.ceil((_a = schema === null || schema === void 0 ? void 0 : schema.minimum) !== null && _a !== void 0 ? _a : 0) : (_b = schema === null || schema === void 0 ? void 0 : schema.minimum) !== null && _b !== void 0 ? _b : 0;
         }
         else if (type === "string") {
@@ -269,8 +272,16 @@ class JsonElement {
             for (const t of this.types) {
                 const option = document.createElement("option");
                 option.innerText = t;
+                option.value = t;
                 select.append(option);
             }
+            select.value = this.currentType;
+            select.onchange = () => {
+                var _a;
+                this.currentType = select.value;
+                this.setCurrentTypeValue((_a = this.currentValues[this.currentType]) !== null && _a !== void 0 ? _a : JsonElement.getDefaultValueForType(this.schema, this.currentType));
+                this.updateElement();
+            };
             this.element.append(select);
         }
         if (type === "object") {
