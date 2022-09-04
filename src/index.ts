@@ -26,4 +26,5 @@ if (rootElement)
 {
     const tool = new JsonTool(rootElement);
     tool.load(personJsonSchema, { age: 2 });
+    (window as any).getValue = () => tool.getValue();
 }

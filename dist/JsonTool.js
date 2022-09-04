@@ -9,6 +9,7 @@ class JsonTool {
         this.root.style.marginLeft = "30px";
         this.root.classList.add("json-tool");
         this.rootObject = null;
+        this.rootElement = null;
         const iframe = document.createElement("iframe");
         iframe.style.width = "100%";
         iframe.style.height = "100%";
@@ -35,7 +36,12 @@ class JsonTool {
         }
         this.rootObject = document.createElement("div");
         this.root.appendChild(this.rootObject);
-        const element = new JsonElement(this.rootObject, schema, value, () => this.onUpdate());
+        this.rootElement = new JsonElement(this.rootObject, schema, value, () => this.onUpdate());
+    }
+    getValue() {
+        var _a;
+        console.log(this.rootElement);
+        return (_a = this.rootElement) === null || _a === void 0 ? void 0 : _a.getValue();
     }
     onUpdate() {
         var _a;
@@ -134,6 +140,8 @@ class JsonTool {
 exports.JsonTool = JsonTool;
 class JsonElement {
     constructor(element, schema, value, onUpdate) {
+        this.arrayElements = [];
+        this.objectElements = {};
         this.element = element;
         this.setStyle();
         this.schema = schema;
@@ -373,6 +381,7 @@ class JsonElement {
     createObjectKeyValuePair(key, schema, value) {
         var _a;
         const parent = document.createElement("div");
+        const originalKey = key;
         if (typeof key === "number") {
             key = (schema === null || schema === void 0 ? void 0 : schema.title) ? `${schema.title} ${key}` : key;
         }
@@ -388,6 +397,10 @@ class JsonElement {
         if (schema || value) {
             const valueElement = document.createElement("div");
             const element = new JsonElement(valueElement, schema, value, () => this.onUpdate && this.onUpdate());
+            if (this.currentType === "array")
+                this.arrayElements.push(element);
+            else if (this.currentType === "object")
+                this.objectElements[originalKey] = element;
             parent.append(valueElement);
         }
         return parent;
@@ -406,6 +419,22 @@ class JsonElement {
     setStyle() {
         this.element.style.whiteSpace = "pre";
         this.element.classList.add("json-tool-value");
+    }
+    getValue() {
+        var _a;
+        if (this.currentType === "array") {
+            return this.arrayElements.map(e => e.getValue());
+        }
+        else if (this.currentType === "object") {
+            const obj = {};
+            for (const key in this.objectElements) {
+                obj[key] = this.objectElements[key].getValue();
+            }
+            return obj;
+        }
+        else {
+            return (_a = this.currentValues[this.currentType]) !== null && _a !== void 0 ? _a : JsonElement.getDefaultValueForType(this.schema, this.currentType);
+        }
     }
 }
 exports.JsonElement = JsonElement;

@@ -4,6 +4,7 @@ export class JsonTool
     private root: HTMLDivElement;
     private rootObject: HTMLDivElement | null;
     private iframeBody: HTMLBodyElement;
+    private rootElement: JsonElement | null;
 
     public constructor(element: Element)
     {
@@ -14,6 +15,7 @@ export class JsonTool
         this.root.classList.add("json-tool");
 
         this.rootObject = null;
+        this.rootElement = null;
 
         const iframe = document.createElement("iframe");
 
@@ -47,7 +49,12 @@ export class JsonTool
         this.rootObject = document.createElement("div");
 
         this.root.appendChild(this.rootObject);
-        const element = new JsonElement(this.rootObject, schema, value, () => this.onUpdate());
+        this.rootElement = new JsonElement(this.rootObject, schema, value, () => this.onUpdate());
+    }
+    public getValue(): any
+    {
+        console.log(this.rootElement);
+        return this.rootElement?.getValue();
     }
     private onUpdate()
     {
@@ -155,6 +162,9 @@ export class JsonElement
 
     private currentType: string;
     private currentValues: Record<string, any>;
+
+    private arrayElements: JsonElement[] = [];
+    private objectElements: Record<string, JsonElement> = {};
 
     public onUpdate: (() => void) | undefined;
 
@@ -459,6 +469,7 @@ export class JsonElement
     private createObjectKeyValuePair(key: string | number, schema: JsonSchemaProperty | null, value?: any): HTMLDivElement
     {
         const parent = document.createElement("div");
+        const originalKey = key;
         if (typeof key === "number")
         {
             key = schema?.title ? `${schema.title} ${key}` : key;
@@ -477,6 +488,8 @@ export class JsonElement
         {
             const valueElement = document.createElement("div");
             const element = new JsonElement(valueElement, schema, value, () => this.onUpdate && this.onUpdate());
+            if (this.currentType === "array") this.arrayElements.push(element);
+            else if (this.currentType === "object") this.objectElements[originalKey] = element;
             parent.append(valueElement);
         }
         return parent;
@@ -497,5 +510,26 @@ export class JsonElement
     {
         this.element.style.whiteSpace = "pre";
         this.element.classList.add("json-tool-value");
+    }
+
+    public getValue(): any
+    {
+        if (this.currentType === "array")
+        {
+            return this.arrayElements.map(e => e.getValue());
+        }
+        else if (this.currentType === "object")
+        {
+            const obj = {} as Record<string, any>;
+            for (const key in this.objectElements)
+            {
+                obj[key] = this.objectElements[key].getValue();
+            }
+            return obj;
+        }
+        else
+        {
+            return this.currentValues[this.currentType] ?? JsonElement.getDefaultValueForType(this.schema, this.currentType);
+        }
     }
 }

@@ -1,5 +1,3 @@
-Make sure positioning works in different kinds of elements
-
     Arrays have buttons to add new elements
     Hovering on array elements can move them up or down
     objects and arrays can be collapsed

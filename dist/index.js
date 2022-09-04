@@ -23,4 +23,5 @@ const rootElement = document.querySelector("#root");
 if (rootElement) {
     const tool = new JsonTool_1.JsonTool(rootElement);
     tool.load(personJsonSchema, { age: 2 });
+    window.getValue = () => tool.getValue();
 }
