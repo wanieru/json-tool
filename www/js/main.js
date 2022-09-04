@@ -447,19 +447,22 @@ class JsonElement {
     }
     getValue() {
         var _a;
+        let val;
         if (this.currentType === "array") {
-            return this.arrayElements.map(e => e.getValue());
+            val = this.arrayElements.map(e => e.getValue());
         }
         else if (this.currentType === "object") {
             const obj = {};
             for (const key in this.objectElements) {
                 obj[key] = this.objectElements[key].getValue();
             }
-            return obj;
+            val = obj;
         }
         else {
-            return (_a = this.currentValues[this.currentType]) !== null && _a !== void 0 ? _a : JsonElement.getDefaultValueForType(this.schema, this.currentType);
+            val = (_a = this.currentValues[this.currentType]) !== null && _a !== void 0 ? _a : JsonElement.getDefaultValueForType(this.schema, this.currentType);
         }
+        this.currentValues[this.currentType] = val;
+        return;
     }
 }
 exports.JsonElement = JsonElement;

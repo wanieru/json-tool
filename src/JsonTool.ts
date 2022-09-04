@@ -530,9 +530,10 @@ export class JsonElement
 
     public getValue(): any
     {
+        let val: any;
         if (this.currentType === "array")
         {
-            return this.arrayElements.map(e => e.getValue());
+            val = this.arrayElements.map(e => e.getValue());
         }
         else if (this.currentType === "object")
         {
@@ -541,11 +542,13 @@ export class JsonElement
             {
                 obj[key] = this.objectElements[key].getValue();
             }
-            return obj;
+            val = obj;
         }
         else
         {
-            return this.currentValues[this.currentType] ?? JsonElement.getDefaultValueForType(this.schema, this.currentType);
+            val = this.currentValues[this.currentType] ?? JsonElement.getDefaultValueForType(this.schema, this.currentType);
         }
+        this.currentValues[this.currentType] = val;
+        return;
     }
 }
