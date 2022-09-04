@@ -276,15 +276,18 @@ export class JsonElement
         const type = this.currentType;
         const val = this.currentValues[type] ?? (this.currentValues[type] = JsonElement.getDefaultValueForType(this.schema, type));
 
-        const select = document.createElement("select");
-        select.classList.add("json-tool-type");
-        for (const t of this.types)
+        if (this.types.length > 1)
         {
-            const option = document.createElement("option");
-            option.innerText = t;
-            select.append(option);
+            const select = document.createElement("select");
+            select.classList.add("json-tool-type");
+            for (const t of this.types)
+            {
+                const option = document.createElement("option");
+                option.innerText = t;
+                select.append(option);
+            }
+            this.element.append(select);
         }
-        this.element.append(select);
 
         if (type === "object")
         {

@@ -239,14 +239,16 @@ class JsonElement {
         this.element.append(this.createLineNumber());
         const type = this.currentType;
         const val = (_a = this.currentValues[type]) !== null && _a !== void 0 ? _a : (this.currentValues[type] = JsonElement.getDefaultValueForType(this.schema, type));
-        const select = document.createElement("select");
-        select.classList.add("json-tool-type");
-        for (const t of this.types) {
-            const option = document.createElement("option");
-            option.innerText = t;
-            select.append(option);
+        if (this.types.length > 1) {
+            const select = document.createElement("select");
+            select.classList.add("json-tool-type");
+            for (const t of this.types) {
+                const option = document.createElement("option");
+                option.innerText = t;
+                select.append(option);
+            }
+            this.element.append(select);
         }
-        this.element.append(select);
         if (type === "object") {
             this.element.append(this.createLineNumber(true));
             this.element.style.display = "block";
@@ -822,7 +824,7 @@ const JsonTool_1 = __webpack_require__(/*! ./JsonTool */ "./dist/JsonTool.js");
 window.JsonTool = JsonTool_1.JsonTool;
 const person = tsch_1.tsch.object({
     name: tsch_1.tsch.string().description("First and Last Name").minLength(4).default("Jeremy Dorn"),
-    age: tsch_1.tsch.number().integer().default(25).min(18).max(99).optional().title("Age"),
+    age: tsch_1.tsch.number().integer().default(25).min(18).max(99).optional().title("Age").union(tsch_1.tsch.string()),
     favorite_color: tsch_1.tsch.string().color().title("favorite color").default("#ffa500"),
     gender: tsch_1.tsch.string().enumeration(["male", "female", "other"]),
     date: tsch_1.tsch.string().date(),

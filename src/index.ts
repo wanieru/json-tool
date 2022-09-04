@@ -5,7 +5,7 @@ import { JsonTool } from "./JsonTool";
 
 const person = tsch.object({
     name: tsch.string().description("First and Last Name").minLength(4).default("Jeremy Dorn"),
-    age: tsch.number().integer().default(25).min(18).max(99).optional().title("Age"),
+    age: tsch.number().integer().default(25).min(18).max(99).optional().title("Age").union(tsch.string()),
     favorite_color: tsch.string().color().title("favorite color").default("#ffa500"),
     gender: tsch.string().enumeration(["male", "female", "other"]),
     date: tsch.string().date(),
