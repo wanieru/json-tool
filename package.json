@@ -1,7 +1,7 @@
 {
-  "name": "json-tool",
+  "name": "@wanieru/json-tool",
   "version": "1.0.0",
-  "description": "",
+  "description": "Simple Json Editor using a Json Schema",
   "main": "index.js",
   "scripts": {
     "build": "tsc --watch",
@@ -20,5 +20,16 @@
   },
   "files": [
     "/lib"
-  ]
+  ],
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wanieru/json-tool.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wanieru/json-tool/issues"
+  },
+  "homepage": "https://github.com/wanieru/json-tool#readme"
 }
