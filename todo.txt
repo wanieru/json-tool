@@ -14,4 +14,6 @@ color types show a color picker
 line numbers are shown
 text area
 
+get json value
+
 use tsch to validate data

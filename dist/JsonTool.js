@@ -7,7 +7,12 @@ class JsonTool {
         this.root.style.fontFamily = "monospace";
         this.root.style.marginLeft = "30px";
         this.root.classList.add("json-tool");
-        element.appendChild(this.root);
+        const frame = document.createElement("frame");
+        frame.style.width = "100%";
+        frame.style.height = "100%";
+        frame.style.overflow = "scroll";
+        frame.append(this.root);
+        element.appendChild(frame);
         this.rootObject = null;
         this.createCss(element);
     }
