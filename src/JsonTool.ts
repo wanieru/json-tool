@@ -1,5 +1,5 @@
 import { JsonSchemaProperty } from "tsch/dist/JsonSchemaPropert";
-import { setSyntheticTrailingComments } from "typescript";
+import { isExpressionWithTypeArguments, setSyntheticTrailingComments } from "typescript";
 export class JsonTool
 {
     private root: HTMLDivElement;
@@ -149,6 +149,13 @@ export class JsonTool
               {
                 margin-top: -15px;
               }
+              .json-tool input, .json-tool select, .json-tool textarea
+              {
+                border: 0;
+                background-color: #ece9e9;
+                padding: 0;
+                margin: 1px;
+              }
 `;
     }
 
@@ -271,7 +278,7 @@ export class JsonElement
             if (schema?.format === "color")
                 return "#000000";
             if (schema?.format === "date")
-                return Date.now()
+                return new Date().toDateString()
             return "";
         }
         else if (type === "boolean")
@@ -501,6 +508,86 @@ export class JsonElement
                 buttons.append(down);
 
             }
+        }
+        else if (type === "boolean")
+        {
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = val;
+            checkbox.onchange = () =>
+            {
+                this.setCurrentTypeValue(checkbox.checked);
+            }
+            this.element.append(checkbox);
+        }
+        else if (type === "string")
+        {
+            if (this.schema?.enum)
+            {
+                const select = document.createElement("select");
+                for (const value of [... new Set(this.schema.enum.concat(val))])
+                {
+                    const option = document.createElement("option");
+                    option.innerText = value;
+                    option.value = value;
+                    select.append(option);
+                }
+                select.value = val;
+                select.onchange = () =>
+                {
+                    this.setCurrentTypeValue(select.value);
+                };
+                this.element.append(select);
+            }
+            else if (this.schema?.format === "textarea")
+            {
+                const input = document.createElement("textarea");
+                input.value = val;
+                input.onchange = () =>
+                {
+                    this.setCurrentTypeValue(input.value);
+                }
+                this.element.append(input);
+            }
+            else if (this.schema?.format === "date")
+            {
+                const input = document.createElement("input");
+                input.type = "date";
+                input.onchange = () =>
+                {
+                    this.setCurrentTypeValue(input.valueAsDate?.toDateString() ?? "");
+                }
+                this.element.append(input);
+                input.valueAsDate = new Date(val);
+            }
+            else
+            {
+                const input = document.createElement("input");
+                input.type = "text";
+                if (this.schema?.format && ["password", "email", "color"].includes(this.schema.format)) input.type = this.schema.format;
+                input.value = val;
+                input.onchange = () =>
+                {
+                    this.setCurrentTypeValue(input.value);
+                }
+                this.element.append(input);
+            }
+        }
+        else if (type === "null")
+        {
+            this.element.append("null");
+        }
+        else if (type === "number")
+        {
+            const input = document.createElement("input");
+            input.type = "number";
+            input.value = val;
+            if (JsonElement.isInteger(this.schema)) input.step = "1";
+            input.onchange = () =>
+            {
+                this.setCurrentTypeValue(input.value);
+            }
+            this.element.append(input);
         }
         else
         {

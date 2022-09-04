@@ -9,6 +9,9 @@ const person = tsch.object({
     favorite_color: tsch.string().color().title("favorite color").default("#ffa500"),
     gender: tsch.string().enumeration(["male", "female", "other"]),
     date: tsch.string().date(),
+    alive: tsch.boolean().optional().nullable().title("Alive").description("If checked, this person is still alive"),
+    description: tsch.string().textarea(),
+    email: tsch.string().email(),
     location: tsch.object({
         city: tsch.string().default("San Francisco"),
         state: tsch.string().default("CA")

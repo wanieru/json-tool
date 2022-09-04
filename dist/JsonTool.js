@@ -134,6 +134,13 @@ class JsonTool {
               {
                 margin-top: -15px;
               }
+              .json-tool input, .json-tool select, .json-tool textarea
+              {
+                border: 0;
+                background-color: #ece9e9;
+                padding: 0;
+                margin: 1px;
+              }
 `;
     }
 }
@@ -224,7 +231,7 @@ class JsonElement {
             if ((schema === null || schema === void 0 ? void 0 : schema.format) === "color")
                 return "#000000";
             if ((schema === null || schema === void 0 ? void 0 : schema.format) === "date")
-                return Date.now();
+                return new Date().toDateString();
             return "";
         }
         else if (type === "boolean") {
@@ -247,7 +254,7 @@ class JsonElement {
         }
     }
     updateElement() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
         this.objectElements = {};
         this.arrayElements = [];
         this.element.innerHTML = "";
@@ -412,6 +419,74 @@ class JsonElement {
                 };
                 buttons.append(down);
             }
+        }
+        else if (type === "boolean") {
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = val;
+            checkbox.onchange = () => {
+                this.setCurrentTypeValue(checkbox.checked);
+            };
+            this.element.append(checkbox);
+        }
+        else if (type === "string") {
+            if ((_k = this.schema) === null || _k === void 0 ? void 0 : _k.enum) {
+                const select = document.createElement("select");
+                for (const value of [...new Set(this.schema.enum.concat(val))]) {
+                    const option = document.createElement("option");
+                    option.innerText = value;
+                    option.value = value;
+                    select.append(option);
+                }
+                select.value = val;
+                select.onchange = () => {
+                    this.setCurrentTypeValue(select.value);
+                };
+                this.element.append(select);
+            }
+            else if (((_l = this.schema) === null || _l === void 0 ? void 0 : _l.format) === "textarea") {
+                const input = document.createElement("textarea");
+                input.value = val;
+                input.onchange = () => {
+                    this.setCurrentTypeValue(input.value);
+                };
+                this.element.append(input);
+            }
+            else if (((_m = this.schema) === null || _m === void 0 ? void 0 : _m.format) === "date") {
+                const input = document.createElement("input");
+                input.type = "date";
+                input.onchange = () => {
+                    var _a, _b;
+                    this.setCurrentTypeValue((_b = (_a = input.valueAsDate) === null || _a === void 0 ? void 0 : _a.toDateString()) !== null && _b !== void 0 ? _b : "");
+                };
+                this.element.append(input);
+                input.valueAsDate = new Date(val);
+            }
+            else {
+                const input = document.createElement("input");
+                input.type = "text";
+                if (((_o = this.schema) === null || _o === void 0 ? void 0 : _o.format) && ["password", "email", "color"].includes(this.schema.format))
+                    input.type = this.schema.format;
+                input.value = val;
+                input.onchange = () => {
+                    this.setCurrentTypeValue(input.value);
+                };
+                this.element.append(input);
+            }
+        }
+        else if (type === "null") {
+            this.element.append("null");
+        }
+        else if (type === "number") {
+            const input = document.createElement("input");
+            input.type = "number";
+            input.value = val;
+            if (JsonElement.isInteger(this.schema))
+                input.step = "1";
+            input.onchange = () => {
+                this.setCurrentTypeValue(input.value);
+            };
+            this.element.append(input);
         }
         else {
             this.element.append(`[${type}] : ${val}`);

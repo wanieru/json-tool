@@ -2,16 +2,16 @@
         Hovering on array elements can move them up or down
         objects and arrays can be collapsed
         Hovering on object keys can toggle whether they're strikethroughed if they're optional
-    hovering over values with multiple types shows a dropdown to change type
+        hovering over values with multiple types shows a dropdown to change type
 
-text fields are object in-line text fields
-number fields are object in-line number fields
-booleans are check boxes
-enumeration types show a dropdown
-color types show a color picker
-line numbers are shown
-text area
+        text fields are object in-line text fields
+        number fields are object in-line number fields
+        booleans are check boxes
+        enumeration types show a dropdown
+        color types show a color picker
+        line numbers are shown
+        text area
 
-get json value
+        get json value
 
 use tsch to validate data
