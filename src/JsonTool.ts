@@ -3,6 +3,8 @@ export class JsonTool
 {
     private root: HTMLDivElement;
     private rootObject: HTMLDivElement | null;
+    private iframeBody: HTMLBodyElement;
+
     public constructor(element: Element)
     {
         this.root = document.createElement("div");
@@ -11,16 +13,25 @@ export class JsonTool
         this.root.style.marginLeft = "30px";
         this.root.classList.add("json-tool");
 
-        const frame = document.createElement("frame");
-        frame.style.width = "100%";
-        frame.style.height = "100%";
-        frame.style.overflow = "scroll";
-
-        frame.append(this.root);
-        element.appendChild(frame);
-
         this.rootObject = null;
-        this.createCss(element);
+
+        const iframe = document.createElement("iframe");
+
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.overflow = "scroll";
+        iframe.style.border = "0";
+        element.appendChild(iframe);
+        this.iframeBody = (iframe.contentDocument || iframe.contentWindow?.document)?.querySelector("body") as HTMLBodyElement;
+        this.iframeBody.append(this.root);
+        this.createCss(this.iframeBody);
+        iframe.onload = () => 
+        {
+            this.iframeBody = (iframe.contentDocument || iframe.contentWindow?.document)?.querySelector("body") as HTMLBodyElement;
+            this.iframeBody.append(this.root);
+            this.createCss(this.iframeBody);
+        }
+
     }
     public load(schema: JsonSchemaProperty, value?: any)
     {
@@ -40,7 +51,6 @@ export class JsonTool
     }
     private onUpdate()
     {
-        console.log("te")
         if (!this.rootObject) return;
         let number = 1;
         this.rootObject?.querySelectorAll(".line-number").forEach(e =>

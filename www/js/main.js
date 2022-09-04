@@ -13,18 +13,27 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.JsonElement = exports.JsonTool = void 0;
 class JsonTool {
     constructor(element) {
+        var _a, _b;
         this.root = document.createElement("div");
         this.root.style.fontFamily = "monospace";
         this.root.style.marginLeft = "30px";
         this.root.classList.add("json-tool");
-        const frame = document.createElement("frame");
-        frame.style.width = "100%";
-        frame.style.height = "100%";
-        frame.style.overflow = "scroll";
-        frame.append(this.root);
-        element.appendChild(frame);
         this.rootObject = null;
-        this.createCss(element);
+        const iframe = document.createElement("iframe");
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.overflow = "scroll";
+        iframe.style.border = "0";
+        element.appendChild(iframe);
+        this.iframeBody = (_b = (iframe.contentDocument || ((_a = iframe.contentWindow) === null || _a === void 0 ? void 0 : _a.document))) === null || _b === void 0 ? void 0 : _b.querySelector("body");
+        this.iframeBody.append(this.root);
+        this.createCss(this.iframeBody);
+        iframe.onload = () => {
+            var _a, _b;
+            this.iframeBody = (_b = (iframe.contentDocument || ((_a = iframe.contentWindow) === null || _a === void 0 ? void 0 : _a.document))) === null || _b === void 0 ? void 0 : _b.querySelector("body");
+            this.iframeBody.append(this.root);
+            this.createCss(this.iframeBody);
+        };
     }
     load(schema, value) {
         this.root.childNodes.forEach(c => c.remove());
@@ -40,7 +49,6 @@ class JsonTool {
     }
     onUpdate() {
         var _a;
-        console.log("te");
         if (!this.rootObject)
             return;
         let number = 1;
