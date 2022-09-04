@@ -36,14 +36,44 @@ export class JsonTool
         parent.appendChild(style);
         style.innerHTML =
             `
-              .json-tool-block > .json-tool-btn {
-                position: absolute;
-                left: 5px;
+            .json-tool-btn
+             {
                 border: 1px black solid;
                 cursor: pointer;
                 display: block;
-                margin-top: -16px;
+             }
+              .json-tool-block > .json-tool-btn {
+                margin-top: -17px;
+                margin-left: -40px;
+                position: absolute;
               }
+              .json-tool-value > .json-tool-btn {
+                margin-left: 10px;
+                display: inline-block;
+                position: absolute;
+              }
+              .json-tool-key > .json-tool-btns {
+                margin-left: -32px;
+                display: inline-block;
+                position: absolute;
+                width: 32px;
+                text-align: right;
+              }
+              .json-tool-key > .json-tool-btns > .json-tool-btn {
+                display: inline-block;
+                margin-right: 2px;
+              }
+              .json-tool-value > .json-tool-type
+              {
+                float:right;
+              }
+              .json-tool-value.json-tool-object > .json-tool-type
+              {
+                float:none;
+                position: absolute;
+                margin-left: 15px;
+              }
+
               .json-tool-block.opened > .json-tool-key {display: block}
               .json-tool-block.closed > .json-tool-key {display: none}
 `;
@@ -188,13 +218,25 @@ export class JsonElement
         this.element.childNodes.forEach(c => c.remove());
 
         this.element.style.display = "inline-block";
+        this.element.classList.remove("json-tool-object");
 
         const type = this.currentType;
-        const val = this.currentValues[type] ?? JsonElement.getDefaultValueForType(this.schema, type);
+        const val = this.currentValues[type] ?? (this.currentValues[type] = JsonElement.getDefaultValueForType(this.schema, type));
+
+        const select = document.createElement("select");
+        select.classList.add("json-tool-type");
+        for (const t of this.types)
+        {
+            const option = document.createElement("option");
+            option.innerText = t;
+            select.append(option);
+        }
+        this.element.append(select);
 
         if (type === "object")
         {
             this.element.style.display = "block";
+            this.element.classList.add("json-tool-object");
             this.element.append("{");
             const object = this.createBlock();
             this.element.append(object);
@@ -202,34 +244,104 @@ export class JsonElement
 
             for (const key in val ?? {})
             {
-                object.append(this.createObjectKeyValuePair(key, this.schema?.properties ? this.schema.properties[key] : null, val[key]));
+                const obj = this.createObjectKeyValuePair(key, this.schema?.properties ? this.schema.properties[key] : null, val[key]);
+                object.append(obj);
+
+                const buttons = document.createElement("div");
+                obj.prepend(buttons);
+                buttons.classList.add("json-tool-btns");
+                if (this.schema?.properties && !this.schema.properties.hasOwnProperty(key))
+                {
+                    const remove = document.createElement("div");
+                    remove.classList.add("json-tool-btn");
+                    remove.innerText = "X";
+                    buttons.append(remove);
+                }
+                else if (!this.schema?.required?.includes(key))
+                {
+                    const remove = document.createElement("div");
+                    remove.classList.add("json-tool-btn");
+                    remove.innerText = "∽";
+                    buttons.append(remove);
+                }
+
+
             }
             if (this.schema?.properties)
             {
                 for (const key in this.schema.properties)
                 {
                     if (val?.hasOwnProperty(key)) continue;
-                    object.append(this.createObjectKeyValuePair(key, this.schema.properties[key]));
+                    if (this.schema?.required?.includes(key))
+                    {
+                        const obj = this.createObjectKeyValuePair(key, this.schema.properties[key]);
+                        object.append(obj);
+                    }
+                    else
+                    {
+                        const obj = this.createObjectKeyValuePair(key, null);
+                        object.append(obj);
+                        obj.style.textDecoration = "line-through 2px";
+
+                        const buttons = document.createElement("div");
+                        obj.prepend(buttons);
+                        buttons.classList.add("json-tool-btns");
+
+                        const add = document.createElement("div");
+                        add.classList.add("json-tool-btn");
+                        add.innerText = "≁";
+                        buttons.append(add);
+                    }
                 }
             }
         }
         else if (type === "array")
         {
             this.element.style.display = "block";
+            this.element.classList.add("json-tool-object");
             this.element.append("[");
             const array = this.createBlock();
             this.element.append(array);
+
+            const add = document.createElement("div");
+            add.classList.add("json-tool-btn");
+            add.innerText = "+";
+            this.element.append(add);
+
             this.element.append("]");
 
             const arr = val ?? [];
             for (let i = 0; i < arr.length; i++)
             {
-                array.append(this.createObjectKeyValuePair(i, this.schema?.items ? this.schema.items : null, val[i]));
+                const obj = this.createObjectKeyValuePair(i, this.schema?.items ? this.schema.items : null, val[i]);
+                array.append(obj);
+
+                const buttons = document.createElement("div");
+                obj.prepend(buttons);
+                buttons.classList.add("json-tool-btns");
+
+                const remove = document.createElement("div");
+                remove.classList.add("json-tool-btn");
+                remove.innerText = "X";
+                buttons.append(remove);
+
+                const up = document.createElement("div");
+                up.classList.add("json-tool-btn");
+                up.innerText = "ᐃ";
+                buttons.append(up);
+
+                const down = document.createElement("div");
+                down.classList.add("json-tool-btn");
+                down.innerText = "ᐁ";
+                buttons.append(down);
+
             }
+
+
         }
         else
         {
-            this.element.innerText = `[${type}]`;
+            this.element.append(`[${type}]`);
         }
     }
     private createBlock(): HTMLDivElement
@@ -248,7 +360,7 @@ export class JsonElement
         const toggle = () =>
         {
             opened = !opened;
-            collapse.innerText = opened ? "-" : "+";
+            collapse.innerText = opened ? "ᐯ" : "ᐳ";
             block.classList.remove("opened", "closed");
             block.classList.add(opened ? "opened" : "closed");
         }
@@ -274,9 +386,12 @@ export class JsonElement
         parent.append(title);
         parent.classList.add("json-tool-key");
         parent.append(": ");
-        const valueElement = document.createElement("div");
-        new JsonElement(valueElement, schema, value);
-        parent.append(valueElement);
+        if (schema || value)
+        {
+            const valueElement = document.createElement("div");
+            new JsonElement(valueElement, schema, value);
+            parent.append(valueElement);
+        }
         return parent;
     }
     private changeType(type: string)
