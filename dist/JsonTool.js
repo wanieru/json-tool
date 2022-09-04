@@ -341,6 +341,7 @@ class JsonElement {
             this.element.append(this.createLineNumber());
             const arr = val !== null && val !== void 0 ? val : [];
             for (let i = 0; i < arr.length; i++) {
+                const idx = i;
                 const obj = this.createObjectKeyValuePair(i, ((_j = this.schema) === null || _j === void 0 ? void 0 : _j.items) ? this.schema.items : null, val[i]);
                 array.append(obj);
                 const buttons = document.createElement("div");
@@ -349,19 +350,39 @@ class JsonElement {
                 const remove = document.createElement("div");
                 remove.classList.add("json-tool-btn");
                 remove.innerText = "X";
+                remove.onclick = () => {
+                    const arr = [...this.getValue()];
+                    arr.splice(idx, 1);
+                    this.setCurrentTypeValue(arr);
+                    this.updateElement();
+                };
                 buttons.append(remove);
                 const up = document.createElement("div");
                 up.classList.add("json-tool-btn");
                 up.innerText = "ᐃ";
+                up.onclick = () => {
+                    let arr = [...this.getValue()];
+                    const element = arr.splice(idx, 1);
+                    arr = arr.slice(0, idx - 1).concat(element).concat(arr.slice(idx - 1));
+                    this.setCurrentTypeValue(arr);
+                    this.updateElement();
+                };
                 buttons.append(up);
                 const down = document.createElement("div");
                 down.classList.add("json-tool-btn");
                 down.innerText = "ᐁ";
+                down.onclick = () => {
+                    let arr = [...this.getValue()];
+                    const element = arr.splice(idx, 1);
+                    arr = arr.slice(0, idx + 1).concat(element).concat(arr.slice(idx + 1));
+                    this.setCurrentTypeValue(arr);
+                    this.updateElement();
+                };
                 buttons.append(down);
             }
         }
         else {
-            this.element.append(`[${type}]`);
+            this.element.append(`[${type}] : ${val}`);
         }
         if (this.onUpdate)
             this.onUpdate();

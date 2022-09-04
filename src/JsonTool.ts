@@ -417,6 +417,7 @@ export class JsonElement
             const arr = val ?? [];
             for (let i = 0; i < arr.length; i++)
             {
+                const idx = i;
                 const obj = this.createObjectKeyValuePair(i, this.schema?.items ? this.schema.items : null, val[i]);
                 array.append(obj);
 
@@ -427,25 +428,46 @@ export class JsonElement
                 const remove = document.createElement("div");
                 remove.classList.add("json-tool-btn");
                 remove.innerText = "X";
+                remove.onclick = () =>
+                {
+                    const arr = [...this.getValue()];
+                    arr.splice(idx, 1);
+                    this.setCurrentTypeValue(arr);
+                    this.updateElement();
+                };
                 buttons.append(remove);
 
                 const up = document.createElement("div");
                 up.classList.add("json-tool-btn");
                 up.innerText = "ᐃ";
+                up.onclick = () =>
+                {
+                    let arr = [...this.getValue()];
+                    const element = arr.splice(idx, 1);
+                    arr = arr.slice(0, idx - 1).concat(element).concat(arr.slice(idx - 1));
+                    this.setCurrentTypeValue(arr);
+                    this.updateElement();
+                };
                 buttons.append(up);
 
                 const down = document.createElement("div");
                 down.classList.add("json-tool-btn");
                 down.innerText = "ᐁ";
+                down.onclick = () =>
+                {
+                    let arr = [...this.getValue()];
+                    const element = arr.splice(idx, 1);
+                    arr = arr.slice(0, idx + 1).concat(element).concat(arr.slice(idx + 1));
+                    this.setCurrentTypeValue(arr);
+                    this.updateElement();
+                };
                 buttons.append(down);
 
             }
-
-
         }
         else
         {
-            this.element.append(`[${type}]`);
+            this.element.append(`[${type}] : ${val}`);
         }
 
         if (this.onUpdate) this.onUpdate();
