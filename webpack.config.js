@@ -3,8 +3,8 @@ const path = require('path');
 module.exports = {
     entry: './dist/index.js',
     output: {
-        filename: 'main.js',
-        path: __dirname + "/www/js",
+        filename: 'json-tool.js',
+        path: __dirname + "/lib",
     },
     resolve: {
     },
