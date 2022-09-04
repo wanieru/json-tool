@@ -37,7 +37,7 @@ export class JsonTool
     }
     public load(schema: JsonSchemaProperty, value?: any)
     {
-        this.root.childNodes.forEach(c => c.remove());
+        this.root.innerHTML = "";
 
         if (schema.title)
         {
@@ -53,7 +53,6 @@ export class JsonTool
     }
     public getValue(): any
     {
-        console.log(this.rootElement);
         return this.rootElement?.getValue();
     }
     private onUpdate()
@@ -289,11 +288,14 @@ export class JsonElement
                     obj[required] = def.value;
                 }
             }
+            return obj;
         }
     }
     private updateElement()
     {
-        this.element.childNodes.forEach(c => c.remove());
+        this.objectElements = {};
+        this.arrayElements = [];
+        this.element.innerHTML = "";
 
         this.element.style.display = "inline-block";
         this.element.classList.remove("json-tool-object");
@@ -394,6 +396,20 @@ export class JsonElement
             add.classList.add("json-tool-btn");
             add.innerText = "+";
             this.element.append(add);
+            add.onclick = () =>
+            {
+                const val = [...this.getValue()];
+                console.log(JSON.stringify(val));
+                if (this.schema?.items)
+                {
+                    const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;
+                    console.log(this.schema.items, defaultValue);
+                    val.push(defaultValue);
+                    this.currentType = type;
+                    this.setCurrentTypeValue(val);
+                    this.updateElement();
+                }
+            }
 
             this.element.append("]");
             this.element.append(this.createLineNumber());

@@ -27,7 +27,7 @@ class JsonTool {
         };
     }
     load(schema, value) {
-        this.root.childNodes.forEach(c => c.remove());
+        this.root.innerHTML = "";
         if (schema.title) {
             const title = document.createElement("h3");
             title.textContent = schema.title;
@@ -40,7 +40,6 @@ class JsonTool {
     }
     getValue() {
         var _a;
-        console.log(this.rootElement);
         return (_a = this.rootElement) === null || _a === void 0 ? void 0 : _a.getValue();
     }
     onUpdate() {
@@ -240,11 +239,14 @@ class JsonElement {
                     obj[required] = def.value;
                 }
             }
+            return obj;
         }
     }
     updateElement() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
-        this.element.childNodes.forEach(c => c.remove());
+        this.objectElements = {};
+        this.arrayElements = [];
+        this.element.innerHTML = "";
         this.element.style.display = "inline-block";
         this.element.classList.remove("json-tool-object");
         this.element.append(this.createLineNumber());
@@ -322,6 +324,19 @@ class JsonElement {
             add.classList.add("json-tool-btn");
             add.innerText = "+";
             this.element.append(add);
+            add.onclick = () => {
+                var _a;
+                const val = [...this.getValue()];
+                console.log(JSON.stringify(val));
+                if ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.items) {
+                    const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;
+                    console.log(this.schema.items, defaultValue);
+                    val.push(defaultValue);
+                    this.currentType = type;
+                    this.setCurrentTypeValue(val);
+                    this.updateElement();
+                }
+            };
             this.element.append("]");
             this.element.append(this.createLineNumber());
             const arr = val !== null && val !== void 0 ? val : [];
