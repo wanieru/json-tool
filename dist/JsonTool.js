@@ -282,6 +282,12 @@ class JsonElement {
                     const remove = document.createElement("div");
                     remove.classList.add("json-tool-btn");
                     remove.innerText = "X";
+                    remove.onclick = () => {
+                        const val = this.getValue();
+                        delete val[key];
+                        this.setCurrentTypeValue(val);
+                        this.updateElement();
+                    };
                     buttons.append(remove);
                 }
                 else if (!((_e = (_d = this.schema) === null || _d === void 0 ? void 0 : _d.required) === null || _e === void 0 ? void 0 : _e.includes(key))) {

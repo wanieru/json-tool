@@ -22,6 +22,6 @@ const personJsonSchema = person.getJsonSchemaProperty();
 const rootElement = document.querySelector("#root");
 if (rootElement) {
     const tool = new JsonTool_1.JsonTool(rootElement);
-    tool.load(personJsonSchema);
+    tool.load(personJsonSchema, { test: 123 });
     window.getValue = () => tool.getValue();
 }
