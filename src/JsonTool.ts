@@ -53,7 +53,6 @@ export class JsonTool
     }
     public getValue(): any
     {
-        console.log(this.rootElement);
         return this.rootElement?.getValue();
     }
     private onUpdate()
@@ -441,7 +440,6 @@ class JsonElement
             add.onclick = () =>
             {
                 const val = [...this.getValue()];
-                console.log(JSON.stringify(val));
                 if (this.schema?.items)
                 {
                     const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;

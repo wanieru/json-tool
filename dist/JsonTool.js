@@ -40,7 +40,6 @@ class JsonTool {
     }
     getValue() {
         var _a;
-        console.log(this.rootElement);
         return (_a = this.rootElement) === null || _a === void 0 ? void 0 : _a.getValue();
     }
     onUpdate() {
@@ -364,7 +363,6 @@ class JsonElement {
             add.onclick = () => {
                 var _a;
                 const val = [...this.getValue()];
-                console.log(JSON.stringify(val));
                 if ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.items) {
                     const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;
                     val.push(defaultValue);

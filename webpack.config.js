@@ -1,10 +1,14 @@
 const path = require('path');
 
 module.exports = {
-    entry: './dist/index.js',
+    entry: {
+        'lib/json-tool.js': './dist/index.js',
+        'www/js/json-tool.js': './dist/index.js',
+        'www/js/main.js': './dist/www.js'
+    },
     output: {
-        filename: 'json-tool.js',
-        path: __dirname + "/lib",
+        filename: '[name]',
+        path: __dirname,
     },
     resolve: {
     },
