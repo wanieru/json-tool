@@ -180,7 +180,9 @@ export class JsonElement
             this.element.append(object);
             this.element.append("}");
 
-            object.style.paddingLeft = "10px";
+            object.style.paddingLeft = "25px";
+            object.style.borderLeft = "1px dashed black";
+            object.style.marginLeft = "3px";
 
             for (const key in val ?? {})
             {
@@ -195,17 +197,42 @@ export class JsonElement
                 }
             }
         }
+        else if (type === "array")
+        {
+            this.element.style.display = "block";
+            this.element.append("[");
+            const array = document.createElement("div");
+            this.element.append(array);
+            this.element.append("]");
+
+            array.style.paddingLeft = "25px";
+            array.style.borderLeft = "1px dashed black";
+            array.style.marginLeft = "3px";
+
+            const arr = val ?? [];
+            for (let i = 0; i < arr.length; i++)
+            {
+                array.append(this.createObjectKeyValuePair(i, this.schema?.items ? this.schema.items : null, val[i]));
+            }
+        }
         else
         {
             this.element.innerText = `[${type}]`;
         }
     }
-    private createObjectKeyValuePair(key: string, schema: JsonSchemaProperty | null, value?: any): HTMLDivElement
+    private createObjectKeyValuePair(key: string | number, schema: JsonSchemaProperty | null, value?: any): HTMLDivElement
     {
         const parent = document.createElement("div");
-        key = schema?.title ?? key;
+        if (typeof key === "number")
+        {
+            key = schema?.title ? `${schema.title} ${key}` : key;
+        }
+        else
+        {
+            key = schema?.title ?? key;
+        }
         const title = document.createElement("span");
-        title.innerText = key;
+        title.innerText = key.toString();
         JsonElement.addDescription(title, schema?.description);
         parent.append(title);
         parent.append(": ");

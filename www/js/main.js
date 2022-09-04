@@ -134,7 +134,7 @@ class JsonElement {
         }
     }
     updateElement() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         this.element.childNodes.forEach(c => c.remove());
         this.element.style.display = "inline-block";
         const type = this.currentType;
@@ -145,7 +145,9 @@ class JsonElement {
             const object = document.createElement("div");
             this.element.append(object);
             this.element.append("}");
-            object.style.paddingLeft = "10px";
+            object.style.paddingLeft = "25px";
+            object.style.borderLeft = "1px dashed black";
+            object.style.marginLeft = "3px";
             for (const key in val !== null && val !== void 0 ? val : {}) {
                 object.append(this.createObjectKeyValuePair(key, ((_b = this.schema) === null || _b === void 0 ? void 0 : _b.properties) ? this.schema.properties[key] : null, val[key]));
             }
@@ -157,6 +159,20 @@ class JsonElement {
                 }
             }
         }
+        else if (type === "array") {
+            this.element.style.display = "block";
+            this.element.append("[");
+            const array = document.createElement("div");
+            this.element.append(array);
+            this.element.append("]");
+            array.style.paddingLeft = "25px";
+            array.style.borderLeft = "1px dashed black";
+            array.style.marginLeft = "3px";
+            const arr = val !== null && val !== void 0 ? val : [];
+            for (let i = 0; i < arr.length; i++) {
+                array.append(this.createObjectKeyValuePair(i, ((_d = this.schema) === null || _d === void 0 ? void 0 : _d.items) ? this.schema.items : null, val[i]));
+            }
+        }
         else {
             this.element.innerText = `[${type}]`;
         }
@@ -164,9 +180,14 @@ class JsonElement {
     createObjectKeyValuePair(key, schema, value) {
         var _a;
         const parent = document.createElement("div");
-        key = (_a = schema === null || schema === void 0 ? void 0 : schema.title) !== null && _a !== void 0 ? _a : key;
+        if (typeof key === "number") {
+            key = (schema === null || schema === void 0 ? void 0 : schema.title) ? `${schema.title} ${key}` : key;
+        }
+        else {
+            key = (_a = schema === null || schema === void 0 ? void 0 : schema.title) !== null && _a !== void 0 ? _a : key;
+        }
         const title = document.createElement("span");
-        title.innerText = key;
+        title.innerText = key.toString();
         JsonElement.addDescription(title, schema === null || schema === void 0 ? void 0 : schema.description);
         parent.append(title);
         parent.append(": ");
