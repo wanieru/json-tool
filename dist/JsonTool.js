@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.JsonElement = exports.JsonTool = void 0;
+exports.JsonTool = void 0;
 class JsonTool {
     constructor(element) {
         var _a, _b;
@@ -274,10 +274,7 @@ class JsonElement {
             }
             select.value = this.currentType;
             select.onchange = () => {
-                var _a;
-                this.currentType = select.value;
-                this.setCurrentTypeValue((_a = this.currentValues[this.currentType]) !== null && _a !== void 0 ? _a : JsonElement.getDefaultValueForType(this.schema, this.currentType));
-                this.updateElement();
+                this.changeType(select.value);
             };
             this.element.append(select);
         }
@@ -589,4 +586,3 @@ class JsonElement {
         return val;
     }
 }
-exports.JsonElement = JsonElement;

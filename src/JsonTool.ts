@@ -161,7 +161,7 @@ export class JsonTool
 
 }
 
-export class JsonElement
+class JsonElement
 {
     private element: HTMLDivElement;
     private schema: JsonSchemaProperty | null;
@@ -332,9 +332,7 @@ export class JsonElement
             select.value = this.currentType;
             select.onchange = () =>
             {
-                this.currentType = select.value;
-                this.setCurrentTypeValue(this.currentValues[this.currentType] ?? JsonElement.getDefaultValueForType(this.schema, this.currentType));
-                this.updateElement();
+                this.changeType(select.value);
             };
             this.element.append(select);
         }
