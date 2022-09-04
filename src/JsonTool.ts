@@ -53,6 +53,7 @@ export class JsonTool
     }
     public getValue(): any
     {
+        console.log(this.rootElement);
         return this.rootElement?.getValue();
     }
     private onUpdate()
@@ -350,6 +351,13 @@ export class JsonElement
                     const remove = document.createElement("div");
                     remove.classList.add("json-tool-btn");
                     remove.innerText = "∽";
+                    remove.onclick = () =>
+                    {
+                        const val = this.getValue();
+                        delete val[key];
+                        this.setCurrentTypeValue(val);
+                        this.updateElement();
+                    };
                     buttons.append(remove);
                 }
 
@@ -367,7 +375,7 @@ export class JsonElement
                     }
                     else
                     {
-                        const obj = this.createObjectKeyValuePair(key, null);
+                        const obj = this.createObjectKeyValuePair(key, this.schema.properties[key], undefined, true);
                         object.append(obj);
                         obj.style.textDecoration = "line-through 2px";
 
@@ -403,7 +411,6 @@ export class JsonElement
                 if (this.schema?.items)
                 {
                     const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;
-                    console.log(this.schema.items, defaultValue);
                     val.push(defaultValue);
                     this.currentType = type;
                     this.setCurrentTypeValue(val);
@@ -504,7 +511,7 @@ export class JsonElement
 
         return block;
     }
-    private createObjectKeyValuePair(key: string | number, schema: JsonSchemaProperty | null, value?: any): HTMLDivElement
+    private createObjectKeyValuePair(key: string | number, schema: JsonSchemaProperty | null, value?: any, noValue: boolean = false): HTMLDivElement
     {
         const parent = document.createElement("div");
         const originalKey = key;
@@ -522,7 +529,7 @@ export class JsonElement
         parent.append(title);
         parent.classList.add("json-tool-key");
         parent.append(": ");
-        if (schema || value)
+        if (!noValue)
         {
             const valueElement = document.createElement("div");
             const element = new JsonElement(valueElement, schema, value, () => this.onUpdate && this.onUpdate());

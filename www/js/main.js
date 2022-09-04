@@ -50,6 +50,7 @@ class JsonTool {
     }
     getValue() {
         var _a;
+        console.log(this.rootElement);
         return (_a = this.rootElement) === null || _a === void 0 ? void 0 : _a.getValue();
     }
     onUpdate() {
@@ -297,6 +298,12 @@ class JsonElement {
                     const remove = document.createElement("div");
                     remove.classList.add("json-tool-btn");
                     remove.innerText = "∽";
+                    remove.onclick = () => {
+                        const val = this.getValue();
+                        delete val[key];
+                        this.setCurrentTypeValue(val);
+                        this.updateElement();
+                    };
                     buttons.append(remove);
                 }
             }
@@ -309,7 +316,7 @@ class JsonElement {
                         object.append(obj);
                     }
                     else {
-                        const obj = this.createObjectKeyValuePair(key, null);
+                        const obj = this.createObjectKeyValuePair(key, this.schema.properties[key], undefined, true);
                         object.append(obj);
                         obj.style.textDecoration = "line-through 2px";
                         const buttons = document.createElement("div");
@@ -340,7 +347,6 @@ class JsonElement {
                 console.log(JSON.stringify(val));
                 if ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.items) {
                     const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;
-                    console.log(this.schema.items, defaultValue);
                     val.push(defaultValue);
                     this.currentType = type;
                     this.setCurrentTypeValue(val);
@@ -424,7 +430,7 @@ class JsonElement {
         toggle();
         return block;
     }
-    createObjectKeyValuePair(key, schema, value) {
+    createObjectKeyValuePair(key, schema, value, noValue = false) {
         var _a;
         const parent = document.createElement("div");
         const originalKey = key;
@@ -440,7 +446,7 @@ class JsonElement {
         parent.append(title);
         parent.classList.add("json-tool-key");
         parent.append(": ");
-        if (schema || value) {
+        if (!noValue) {
             const valueElement = document.createElement("div");
             const element = new JsonElement(valueElement, schema, value, () => this.onUpdate && this.onUpdate());
             if (this.currentType === "array")
