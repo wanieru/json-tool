@@ -580,13 +580,13 @@ class JsonElement
         {
             const input = document.createElement("input");
             input.type = "number";
-            input.value = val;
+            input.value = val.toString();
             input.min = this.schema?.minimum?.toString() ?? "";
             input.max = this.schema?.maximum?.toString() ?? "";
             if (JsonElement.isInteger(this.schema)) input.step = "1";
             input.onchange = () =>
             {
-                this.setCurrentTypeValue(input.value);
+                this.setCurrentTypeValue(parseFloat(input.value));
             }
             this.element.append(input);
         }

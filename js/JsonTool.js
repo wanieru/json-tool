@@ -479,13 +479,13 @@ class JsonElement {
         else if (type === "number") {
             const input = document.createElement("input");
             input.type = "number";
-            input.value = val;
+            input.value = val.toString();
             input.min = (_z = (_y = (_x = this.schema) === null || _x === void 0 ? void 0 : _x.minimum) === null || _y === void 0 ? void 0 : _y.toString()) !== null && _z !== void 0 ? _z : "";
             input.max = (_2 = (_1 = (_0 = this.schema) === null || _0 === void 0 ? void 0 : _0.maximum) === null || _1 === void 0 ? void 0 : _1.toString()) !== null && _2 !== void 0 ? _2 : "";
             if (JsonElement.isInteger(this.schema))
                 input.step = "1";
             input.onchange = () => {
-                this.setCurrentTypeValue(input.value);
+                this.setCurrentTypeValue(parseFloat(input.value));
             };
             this.element.append(input);
         }
