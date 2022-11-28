@@ -1,5 +1,9 @@
 # JsonTool
 
+### Demo
+https://wanieru.github.io/json-tool
+
+### Usage
 ```html
 <script src="https://unpkg.com/@wanieru/json-tool/lib/json-tool.js"/>
 ```
