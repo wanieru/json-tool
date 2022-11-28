@@ -584,3 +584,4 @@ class JsonElement {
         return val;
     }
 }
+//# sourceMappingURL=JsonTool.js.map

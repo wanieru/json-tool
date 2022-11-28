@@ -29,3 +29,4 @@ if (rootElement) {
     tool.load(personJsonSchema, { test: 123 });
     window.getValue = () => tool.getValue();
 }
+//# sourceMappingURL=www.js.map
