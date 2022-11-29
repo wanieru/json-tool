@@ -15,6 +15,7 @@ export declare class JsonTool {
     private validator;
     constructor(element: Element, validator?: Validator | null);
     load(schema: JsonSchemaProperty, value?: any, validator?: Validator): void;
+    hide(): void;
     setValidator(validator: Validator): void;
     getValue(): any;
     private onUpdate;

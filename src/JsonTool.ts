@@ -69,6 +69,10 @@ export class JsonTool
         this.rootElement = new JsonElement(this.rootObject, schema, value, () => this.onUpdate(), () => this.validate());
         this.validate();
     }
+    public hide()
+    {
+        this.root.innerHTML = "";
+    }
     public setValidator(validator: Validator)
     {
         this.validator = validator;
