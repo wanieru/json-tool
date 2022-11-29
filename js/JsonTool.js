@@ -2,14 +2,18 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JsonTool = void 0;
 class JsonTool {
-    constructor(element) {
+    constructor(element, validator = null) {
         var _a, _b;
+        this.validator = validator !== null && validator !== void 0 ? validator : (() => { return { valid: true }; });
+        this.schema = null;
         this.root = document.createElement("div");
         this.root.style.fontFamily = "monospace";
         this.root.style.marginLeft = "30px";
         this.root.classList.add("json-tool");
         this.rootObject = null;
         this.rootElement = null;
+        this.errorMessages = document.createElement("div");
+        this.errorMessages.classList.add("json-tool-errors");
         const iframe = document.createElement("iframe");
         iframe.style.width = "100%";
         iframe.style.height = "100%";
@@ -24,19 +28,26 @@ class JsonTool {
             this.iframeBody = (_b = (iframe.contentDocument || ((_a = iframe.contentWindow) === null || _a === void 0 ? void 0 : _a.document))) === null || _b === void 0 ? void 0 : _b.querySelector("body");
             this.iframeBody.append(this.root);
             this.createCss(this.iframeBody);
+            this.iframeBody.appendChild(this.errorMessages);
         };
     }
-    load(schema, value) {
+    load(schema, value, validator) {
+        this.validator = validator !== null && validator !== void 0 ? validator : this.validator;
+        this.schema = schema;
         this.root.innerHTML = "";
         if (schema.title) {
             const title = document.createElement("h3");
             title.textContent = schema.title;
-            JsonElement.addDescription(title, schema.description);
+            JsonElement.addDescription(title, schema.description, schema === null || schema === void 0 ? void 0 : schema.examples);
             this.root.appendChild(title);
         }
         this.rootObject = document.createElement("div");
         this.root.appendChild(this.rootObject);
-        this.rootElement = new JsonElement(this.rootObject, schema, value, () => this.onUpdate());
+        this.rootElement = new JsonElement(this.rootObject, schema, value, () => this.onUpdate(), () => this.validate());
+        this.validate();
+    }
+    setValidator(validator) {
+        this.validator = validator;
     }
     getValue() {
         var _a;
@@ -51,6 +62,17 @@ class JsonTool {
             e.innerText = number.toString();
             number++;
         });
+        this.validate();
+    }
+    validate() {
+        var _a;
+        if (this.schema && this.errorMessages) {
+            const valid = this.validator(this.getValue(), this.schema);
+            this.errorMessages.innerHTML = "";
+            if (!valid.valid) {
+                this.errorMessages.innerHTML = ((_a = valid.errors) !== null && _a !== void 0 ? _a : []).map(e => typeof e === "string" ? e : e.message).join("\n");
+            }
+        }
     }
     createCss(parent) {
         const style = document.createElement("style");
@@ -140,18 +162,28 @@ class JsonTool {
                 padding: 0;
                 margin: 1px;
               }
+
+                .json-tool-errors {
+                    color: red;
+                    white-space: pre;
+                    font-family: monospace;
+                    line-height: 2em;
+                    font-weight: bold;
+                    font-size: 1.2em;
+                }
 `;
     }
 }
 exports.JsonTool = JsonTool;
 class JsonElement {
-    constructor(element, schema, value, onUpdate) {
+    constructor(element, schema, value, onUpdate, validate) {
         this.arrayElements = [];
         this.objectElements = {};
         this.element = element;
         this.setStyle();
         this.schema = schema;
         this.onUpdate = onUpdate;
+        this.validate = validate;
         this.currentValues = {};
         this.types = schema ? JsonElement.getDefaultAvailableTypes(schema) : [];
         const actualType = JsonElement.getType(value);
@@ -171,8 +203,13 @@ class JsonElement {
     }
     setCurrentTypeValue(value) {
         this.currentValues[this.currentType] = typeof value !== "undefined" ? JSON.parse(JSON.stringify(value)) : undefined;
+        if (this.validate)
+            this.validate();
     }
-    static addDescription(element, description) {
+    static addDescription(element, description, examples) {
+        if (examples) {
+            description = `${description ? `${description}\n` : ""}Examples:\n${examples.map(e => JSON.stringify(e)).join(",\n")}`;
+        }
         if (description) {
             element.title = description;
             element.style.textDecoration = "underline dotted";
@@ -209,8 +246,11 @@ class JsonElement {
     }
     static getDefaultValue(schema) {
         const availableTypes = this.getDefaultAvailableTypes(schema);
-        if (schema.default) {
+        if (typeof schema.default !== "undefined") {
             return { type: this.getType(schema.default), value: schema.default };
+        }
+        else if (schema.examples && schema.examples.length > 0) {
+            return { type: this.getType(schema.examples[0]), value: schema.examples[0] };
         }
         else {
             return { type: availableTypes[0], value: this.getDefaultValueForType(schema, availableTypes[0]) };
@@ -534,13 +574,13 @@ class JsonElement {
         }
         const title = document.createElement("span");
         title.innerText = key.toString();
-        JsonElement.addDescription(title, schema === null || schema === void 0 ? void 0 : schema.description);
+        JsonElement.addDescription(title, schema === null || schema === void 0 ? void 0 : schema.description, schema === null || schema === void 0 ? void 0 : schema.examples);
         parent.append(title);
         parent.classList.add("json-tool-key");
         parent.append(": ");
         if (!noValue) {
             const valueElement = document.createElement("div");
-            const element = new JsonElement(valueElement, schema, value, () => this.onUpdate && this.onUpdate());
+            const element = new JsonElement(valueElement, schema, value, () => this.onUpdate && this.onUpdate(), () => this.validate && this.validate());
             if (this.currentType === "array")
                 this.arrayElements.push(element);
             else if (this.currentType === "object")
