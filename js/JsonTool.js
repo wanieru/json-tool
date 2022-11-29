@@ -65,14 +65,16 @@ class JsonTool {
         this.validate();
     }
     validate() {
-        var _a;
-        if (this.schema && this.errorMessages) {
-            const valid = this.validator(this.getValue(), this.schema);
-            this.errorMessages.innerHTML = "";
-            if (!valid.valid) {
-                this.errorMessages.innerHTML = ((_a = valid.errors) !== null && _a !== void 0 ? _a : []).map(e => typeof e === "string" ? e : e.message).join("\n");
+        window.setTimeout(() => {
+            var _a;
+            if (this.schema && this.errorMessages) {
+                const valid = this.validator(this.getValue(), this.schema);
+                this.errorMessages.innerHTML = "";
+                if (!valid.valid) {
+                    this.errorMessages.innerHTML = ((_a = valid.errors) !== null && _a !== void 0 ? _a : []).map(e => typeof e === "string" ? e : e.message).join("\n");
+                }
             }
-        }
+        }, 1);
     }
     createCss(parent) {
         const style = document.createElement("style");
@@ -401,9 +403,11 @@ class JsonElement {
             add.innerText = "+";
             this.element.append(add);
             add.onclick = () => {
-                var _a;
+                var _a, _b;
                 const val = [...this.getValue()];
-                if ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.items) {
+                if (val.length === ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.maxItems))
+                    return;
+                if ((_b = this.schema) === null || _b === void 0 ? void 0 : _b.items) {
                     const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;
                     val.push(defaultValue);
                     this.currentType = type;
@@ -425,7 +429,10 @@ class JsonElement {
                 remove.classList.add("json-tool-btn");
                 remove.innerText = "X";
                 remove.onclick = () => {
+                    var _a;
                     const arr = [...this.getValue()];
+                    if (arr.length === ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.minItems))
+                        return;
                     arr.splice(idx, 1);
                     this.setCurrentTypeValue(arr);
                     this.updateElement();

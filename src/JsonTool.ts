@@ -90,16 +90,19 @@ export class JsonTool
     }
     private validate()
     {
-        if (this.schema && this.errorMessages)
+        window.setTimeout(() =>
         {
-            const valid = this.validator(this.getValue(), this.schema);
-
-            this.errorMessages.innerHTML = "";
-            if (!valid.valid)
+            if (this.schema && this.errorMessages)
             {
-                this.errorMessages.innerHTML = (valid.errors ?? []).map(e => typeof e === "string" ? e : e.message).join("\n");
+                const valid = this.validator(this.getValue(), this.schema);
+
+                this.errorMessages.innerHTML = "";
+                if (!valid.valid)
+                {
+                    this.errorMessages.innerHTML = (valid.errors ?? []).map(e => typeof e === "string" ? e : e.message).join("\n");
+                }
             }
-        }
+        }, 1);
     }
     private createCss(parent: Element)
     {
@@ -496,6 +499,7 @@ class JsonElement
             add.onclick = () =>
             {
                 const val = [...this.getValue()];
+                if (val.length === this.schema?.maxItems) return;
                 if (this.schema?.items)
                 {
                     const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;
@@ -526,6 +530,7 @@ class JsonElement
                 remove.onclick = () =>
                 {
                     const arr = [...this.getValue()];
+                    if (arr.length === this.schema?.minItems) return;
                     arr.splice(idx, 1);
                     this.setCurrentTypeValue(arr);
                     this.updateElement();
