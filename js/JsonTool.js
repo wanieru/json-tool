@@ -4,6 +4,7 @@ exports.JsonTool = void 0;
 class JsonTool {
     constructor(element, validator = null) {
         var _a, _b;
+        this.containerElement = element;
         this.validator = validator !== null && validator !== void 0 ? validator : (() => { return { valid: true }; });
         this.schema = null;
         this.root = document.createElement("div");
@@ -19,6 +20,7 @@ class JsonTool {
         iframe.style.height = "100%";
         iframe.style.overflow = "scroll";
         iframe.style.border = "0";
+        element.innerHTML = "";
         element.appendChild(iframe);
         this.iframeBody = (_b = (iframe.contentDocument || ((_a = iframe.contentWindow) === null || _a === void 0 ? void 0 : _a.document))) === null || _b === void 0 ? void 0 : _b.querySelector("body");
         this.iframeBody.append(this.root);
@@ -47,7 +49,7 @@ class JsonTool {
         this.validate();
     }
     hide() {
-        this.root.innerHTML = "";
+        this.containerElement.innerHTML = "";
     }
     setValidator(validator) {
         this.validator = validator;

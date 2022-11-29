@@ -4,6 +4,7 @@ export type Validator = (value: any, schema: JsonSchemaProperty) => { valid: boo
 
 export class JsonTool
 {
+    private containerElement: Element;
     private root: HTMLDivElement;
     private rootObject: HTMLDivElement | null;
     private errorMessages: HTMLDivElement;
@@ -14,6 +15,7 @@ export class JsonTool
 
     public constructor(element: Element, validator: Validator | null = null)
     {
+        this.containerElement = element;
         this.validator = validator ?? (() => { return { valid: true } });
         this.schema = null;
         this.root = document.createElement("div");
@@ -35,6 +37,7 @@ export class JsonTool
         iframe.style.height = "100%";
         iframe.style.overflow = "scroll";
         iframe.style.border = "0";
+        element.innerHTML = "";
         element.appendChild(iframe);
         this.iframeBody = (iframe.contentDocument || iframe.contentWindow?.document)?.querySelector("body") as HTMLBodyElement;
         this.iframeBody.append(this.root);
@@ -71,7 +74,7 @@ export class JsonTool
     }
     public hide()
     {
-        this.root.innerHTML = "";
+        this.containerElement.innerHTML = "";
     }
     public setValidator(validator: Validator)
     {

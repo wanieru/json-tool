@@ -6,6 +6,7 @@ export declare type Validator = (value: any, schema: JsonSchemaProperty) => {
     })[];
 };
 export declare class JsonTool {
+    private containerElement;
     private root;
     private rootObject;
     private errorMessages;
