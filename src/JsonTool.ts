@@ -2,7 +2,14 @@ import { JsonSchemaProperty } from "tsch/dist/JsonSchemaProperty";
 
 export type Validator = (value: any, schema: JsonSchemaProperty) => { valid: boolean, errors?: (string | { message: string })[] }
 
-export class JsonTool
+interface JsonElementParent
+{
+    update(): void
+    validate(): void
+    getState(): Record<string, any>
+}
+
+export class JsonTool implements JsonElementParent
 {
     private containerElement: Element;
     private root: HTMLDivElement;
@@ -11,6 +18,7 @@ export class JsonTool
     private iframeBody: HTMLBodyElement;
     private rootElement: JsonElement | null;
     private schema: JsonSchemaProperty | null;
+    private elementState: Record<string, any> = {};
     private validator: Validator;
 
     public constructor(element: Element, validator: Validator | null = null)
@@ -53,6 +61,17 @@ export class JsonTool
 
 
     }
+
+    getPath(element: JsonElement): string
+    {
+        return "root";
+    }
+    getState(): Record<string, any>
+    {
+        console.log(this.elementState);
+        return this.elementState;
+    }
+
     public load(schema: JsonSchemaProperty, value?: any, validator?: Validator)
     {
         this.validator = validator ?? this.validator;
@@ -69,7 +88,7 @@ export class JsonTool
         this.rootObject = document.createElement("div");
 
         this.root.appendChild(this.rootObject);
-        this.rootElement = new JsonElement(this.rootObject, schema, value, () => this.onUpdate(), () => this.validate());
+        this.rootElement = new JsonElement("root", this.rootObject, schema, value, this);
         this.validate();
     }
     public hide()
@@ -84,7 +103,7 @@ export class JsonTool
     {
         return this.rootElement?.getValue();
     }
-    private onUpdate()
+    public update()
     {
         if (!this.rootObject) return;
         let number = 1;
@@ -95,7 +114,7 @@ export class JsonTool
         });
         this.validate();
     }
-    private validate()
+    public validate()
     {
         window.setTimeout(() =>
         {
@@ -215,7 +234,7 @@ export class JsonTool
 
 }
 
-class JsonElement
+class JsonElement implements JsonElementParent
 {
     private element: HTMLDivElement;
     private schema: JsonSchemaProperty | null;
@@ -227,17 +246,17 @@ class JsonElement
     private arrayElements: JsonElement[] = [];
     private objectElements: Record<string, JsonElement> = {};
 
-    public onUpdate: (() => void) | undefined;
-    public validate: (() => void) | undefined;
+    private parent: JsonElementParent;
+    private path: string;
 
-    public constructor(element: HTMLDivElement, schema: JsonSchemaProperty | null, value: any, onUpdate: (() => void), validate: (() => void))
+    public constructor(path: string, element: HTMLDivElement, schema: JsonSchemaProperty | null, value: any, parent: JsonElementParent)
     {
         this.element = element;
         this.setStyle();
 
         this.schema = schema;
-        this.onUpdate = onUpdate;
-        this.validate = validate;
+        this.parent = parent;
+        this.path = path;
 
         this.currentValues = {};
         this.types = schema ? JsonElement.getDefaultAvailableTypes(schema) : [];
@@ -258,6 +277,33 @@ class JsonElement
         this.types = [...new Set(this.types)];
         this.updateElement();
     }
+
+    update(): void
+    {
+        this.parent.update();
+    }
+    validate(): void
+    {
+        this.parent.validate();
+    }
+    getPath(element: JsonElement): string
+    {
+        for (let i = 0; i < this.arrayElements.length; i++)
+        {
+            if (this.arrayElements[i] === element) return `${this.path}.${i}`;
+        }
+        for (const key in this.objectElements)
+        {
+            if (this.objectElements[key] === element) return `${this.path}.${key}`;
+        }
+
+        return `${this.path}.?`;
+    }
+    getState(): Record<string, any>
+    {
+        return this.parent.getState();
+    }
+
     private setCurrentTypeValue(value: any)
     {
         this.currentValues[this.currentType] = typeof value !== "undefined" ? JSON.parse(JSON.stringify(value)) : undefined;
@@ -513,6 +559,7 @@ class JsonElement
                     val.push(defaultValue);
                     this.currentType = type;
                     this.setCurrentTypeValue(val);
+                    this.setIsOpened(true);
                     this.updateElement();
                 }
             }
@@ -663,7 +710,7 @@ class JsonElement
             this.element.append(`[${type}] : ${val}`);
         }
 
-        if (this.onUpdate) this.onUpdate();
+        this.update();
     }
     private createLineNumber(overrideMargin: boolean = false): HTMLDivElement
     {
@@ -671,6 +718,14 @@ class JsonElement
         lineNumber.classList.add("line-number");
         if (overrideMargin) lineNumber.style.marginTop = "0";
         return lineNumber;
+    }
+    private isOpened()
+    {
+        return this.parent.getState()[`${this.path}_opened`] ?? true;
+    }
+    private setIsOpened(state: boolean)
+    {
+        this.parent.getState()[`${this.path}_opened`] = state;
     }
     private createBlock(): HTMLDivElement
     {
@@ -681,19 +736,25 @@ class JsonElement
         block.style.borderLeft = "1px dashed black";
         block.style.marginLeft = "3px";
 
-        let opened = false;
+
         const collapse = document.createElement("div");
-        block.append(collapse);
+        if (this.path !== "root") block.append(collapse);
         collapse.classList.add("json-tool-btn");
-        const toggle = () =>
+        const updateOpened = (opened: boolean) =>
         {
-            opened = !opened;
             collapse.innerText = opened ? "ᐯ" : "ᐳ";
             block.classList.remove("opened", "closed");
             block.classList.add(opened ? "opened" : "closed");
         }
+        const toggle = () =>
+        {
+            const opened = !this.isOpened();
+            this.setIsOpened(opened);
+            updateOpened(opened);
+        }
         collapse.onclick = toggle;
-        toggle();
+
+        updateOpened(this.isOpened());
 
         return block;
     }
@@ -718,7 +779,7 @@ class JsonElement
         if (!noValue)
         {
             const valueElement = document.createElement("div");
-            const element = new JsonElement(valueElement, schema, value, () => this.onUpdate && this.onUpdate(), () => this.validate && this.validate());
+            const element = new JsonElement(`${this.path}.${originalKey}`, valueElement, schema, value, this);
             if (this.currentType === "array") this.arrayElements.push(element);
             else if (this.currentType === "object") this.objectElements[originalKey] = element;
             parent.append(valueElement);

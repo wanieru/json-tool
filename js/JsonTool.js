@@ -4,6 +4,7 @@ exports.JsonTool = void 0;
 class JsonTool {
     constructor(element, validator = null) {
         var _a, _b;
+        this.elementState = {};
         this.containerElement = element;
         this.validator = validator !== null && validator !== void 0 ? validator : (() => { return { valid: true }; });
         this.schema = null;
@@ -33,6 +34,13 @@ class JsonTool {
             this.iframeBody.appendChild(this.errorMessages);
         };
     }
+    getPath(element) {
+        return "root";
+    }
+    getState() {
+        console.log(this.elementState);
+        return this.elementState;
+    }
     load(schema, value, validator) {
         this.validator = validator !== null && validator !== void 0 ? validator : this.validator;
         this.schema = schema;
@@ -45,7 +53,7 @@ class JsonTool {
         }
         this.rootObject = document.createElement("div");
         this.root.appendChild(this.rootObject);
-        this.rootElement = new JsonElement(this.rootObject, schema, value, () => this.onUpdate(), () => this.validate());
+        this.rootElement = new JsonElement("root", this.rootObject, schema, value, this);
         this.validate();
     }
     hide() {
@@ -58,7 +66,7 @@ class JsonTool {
         var _a;
         return (_a = this.rootElement) === null || _a === void 0 ? void 0 : _a.getValue();
     }
-    onUpdate() {
+    update() {
         var _a;
         if (!this.rootObject)
             return;
@@ -183,14 +191,14 @@ class JsonTool {
 }
 exports.JsonTool = JsonTool;
 class JsonElement {
-    constructor(element, schema, value, onUpdate, validate) {
+    constructor(path, element, schema, value, parent) {
         this.arrayElements = [];
         this.objectElements = {};
         this.element = element;
         this.setStyle();
         this.schema = schema;
-        this.onUpdate = onUpdate;
-        this.validate = validate;
+        this.parent = parent;
+        this.path = path;
         this.currentValues = {};
         this.types = schema ? JsonElement.getDefaultAvailableTypes(schema) : [];
         const actualType = JsonElement.getType(value);
@@ -207,6 +215,26 @@ class JsonElement {
         }
         this.types = [...new Set(this.types)];
         this.updateElement();
+    }
+    update() {
+        this.parent.update();
+    }
+    validate() {
+        this.parent.validate();
+    }
+    getPath(element) {
+        for (let i = 0; i < this.arrayElements.length; i++) {
+            if (this.arrayElements[i] === element)
+                return `${this.path}.${i}`;
+        }
+        for (const key in this.objectElements) {
+            if (this.objectElements[key] === element)
+                return `${this.path}.${key}`;
+        }
+        return `${this.path}.?`;
+    }
+    getState() {
+        return this.parent.getState();
     }
     setCurrentTypeValue(value) {
         this.currentValues[this.currentType] = typeof value !== "undefined" ? JSON.parse(JSON.stringify(value)) : undefined;
@@ -417,6 +445,7 @@ class JsonElement {
                     val.push(defaultValue);
                     this.currentType = type;
                     this.setCurrentTypeValue(val);
+                    this.setIsOpened(true);
                     this.updateElement();
                 }
             };
@@ -544,8 +573,7 @@ class JsonElement {
         else {
             this.element.append(`[${type}] : ${val}`);
         }
-        if (this.onUpdate)
-            this.onUpdate();
+        this.update();
     }
     createLineNumber(overrideMargin = false) {
         const lineNumber = document.createElement("div");
@@ -554,24 +582,35 @@ class JsonElement {
             lineNumber.style.marginTop = "0";
         return lineNumber;
     }
+    isOpened() {
+        var _a;
+        return (_a = this.parent.getState()[`${this.path}_opened`]) !== null && _a !== void 0 ? _a : true;
+    }
+    setIsOpened(state) {
+        this.parent.getState()[`${this.path}_opened`] = state;
+    }
     createBlock() {
         const block = document.createElement("div");
         block.classList.add("json-tool-block");
         block.style.paddingLeft = "25px";
         block.style.borderLeft = "1px dashed black";
         block.style.marginLeft = "3px";
-        let opened = false;
         const collapse = document.createElement("div");
-        block.append(collapse);
+        if (this.path !== "root")
+            block.append(collapse);
         collapse.classList.add("json-tool-btn");
-        const toggle = () => {
-            opened = !opened;
+        const updateOpened = (opened) => {
             collapse.innerText = opened ? "ᐯ" : "ᐳ";
             block.classList.remove("opened", "closed");
             block.classList.add(opened ? "opened" : "closed");
         };
+        const toggle = () => {
+            const opened = !this.isOpened();
+            this.setIsOpened(opened);
+            updateOpened(opened);
+        };
         collapse.onclick = toggle;
-        toggle();
+        updateOpened(this.isOpened());
         return block;
     }
     createObjectKeyValuePair(key, schema, value, noValue = false) {
@@ -592,7 +631,7 @@ class JsonElement {
         parent.append(": ");
         if (!noValue) {
             const valueElement = document.createElement("div");
-            const element = new JsonElement(valueElement, schema, value, () => this.onUpdate && this.onUpdate(), () => this.validate && this.validate());
+            const element = new JsonElement(`${this.path}.${originalKey}`, valueElement, schema, value, this);
             if (this.currentType === "array")
                 this.arrayElements.push(element);
             else if (this.currentType === "object")
