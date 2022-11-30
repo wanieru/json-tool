@@ -34,11 +34,9 @@ class JsonTool {
             this.iframeBody.appendChild(this.errorMessages);
         };
     }
-    getPath(element) {
-        return "root";
+    deleteChild(key) {
     }
     getState() {
-        console.log(this.elementState);
         return this.elementState;
     }
     load(schema, value, validator) {
@@ -53,7 +51,7 @@ class JsonTool {
         }
         this.rootObject = document.createElement("div");
         this.root.appendChild(this.rootObject);
-        this.rootElement = new JsonElement("root", this.rootObject, schema, value, this);
+        this.rootElement = new JsonElement("", "root", this.rootObject, schema, value, this);
         this.validate();
     }
     hide() {
@@ -121,7 +119,7 @@ class JsonTool {
                 opacity :1;
               }
               .json-tool-key > .json-tool-btns {
-                margin-left: -32px;
+                margin-left: -36px;
                 display: inline-block;
                 position: absolute;
                 width: 32px;
@@ -137,21 +135,24 @@ class JsonTool {
                 display: inline-block;
                 margin-right: 2px;
               }
-              .json-tool-value > .json-tool-type
+              .json-tool-types > .json-tool-type
               {
-                float:right;
-                opacity: 0;
                 padding:0;
                 margin:0;
                 border:0;
               }
-              .json-tool-value.json-tool-object > .json-tool-type
+              .json-tool-value > .json-tool-types
+              {
+                float:right;
+                opacity: 0;
+              }
+              .json-tool-value.json-tool-object > .json-tool-types
               {
                 float:none;
                 position: absolute;
                 margin-left: 15px;
               }
-              .json-tool-value:hover > .json-tool-type
+              .json-tool-value:hover > .json-tool-types
               {
                 opacity: 1;
               }
@@ -191,13 +192,14 @@ class JsonTool {
 }
 exports.JsonTool = JsonTool;
 class JsonElement {
-    constructor(path, element, schema, value, parent) {
+    constructor(key, path, element, schema, value, parent) {
         this.arrayElements = [];
         this.objectElements = {};
         this.element = element;
         this.setStyle();
         this.schema = schema;
         this.parent = parent;
+        this.key = key;
         this.path = path;
         this.currentValues = {};
         this.types = schema ? JsonElement.getDefaultAvailableTypes(schema) : [];
@@ -235,6 +237,20 @@ class JsonElement {
     }
     getState() {
         return this.parent.getState();
+    }
+    deleteChild(key) {
+        if (typeof key === "string") {
+            const val = this.getValue();
+            delete val[key];
+            this.setCurrentTypeValue(val);
+            this.updateElement();
+        }
+        else if (typeof key === "number") {
+            const arr = [...this.getValue()];
+            arr.splice(key, 1);
+            this.setCurrentTypeValue(arr);
+            this.updateElement();
+        }
     }
     setCurrentTypeValue(value) {
         this.currentValues[this.currentType] = typeof value !== "undefined" ? JSON.parse(JSON.stringify(value)) : undefined;
@@ -328,7 +344,7 @@ class JsonElement {
         }
     }
     updateElement() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
         this.objectElements = {};
         this.arrayElements = [];
         this.element.innerHTML = "";
@@ -337,7 +353,10 @@ class JsonElement {
         this.element.append(this.createLineNumber());
         const type = this.currentType;
         const val = (_a = this.currentValues[type]) !== null && _a !== void 0 ? _a : (this.currentValues[type] = JsonElement.getDefaultValueForType(this.schema, type));
-        if (this.types.length > 1) {
+        const typeDiv = document.createElement("div");
+        typeDiv.classList.add("json-tool-types");
+        this.element.append(typeDiv);
+        if (this.types.length > 1 || type !== this.types[0]) {
             const select = document.createElement("select");
             select.classList.add("json-tool-type");
             for (const t of this.types) {
@@ -350,8 +369,27 @@ class JsonElement {
             select.onchange = () => {
                 this.changeType(select.value);
             };
-            this.element.append(select);
+            typeDiv.append(select);
         }
+        const changeTypeButton = document.createElement("div");
+        changeTypeButton.classList.add("json-tool-btn");
+        changeTypeButton.style.display = "inline-block";
+        changeTypeButton.style.marginLeft = "5px";
+        changeTypeButton.innerText = "*";
+        changeTypeButton.onclick = () => {
+            var _a;
+            const validTypes = ["object", "array", "boolean", "string", "number", "null", "undefined"];
+            const newType = (_a = window.prompt(`Enter new type:\n${validTypes.join(", ")}`)) !== null && _a !== void 0 ? _a : "";
+            if (validTypes.includes(newType)) {
+                if (newType === "undefined") {
+                    this.parent.deleteChild(this.key);
+                }
+                else {
+                    this.changeType(newType);
+                }
+            }
+        };
+        typeDiv.append(changeTypeButton);
         if (type === "object") {
             this.element.append(this.createLineNumber(true));
             this.element.style.display = "block";
@@ -359,6 +397,19 @@ class JsonElement {
             this.element.append("{");
             const object = this.createBlock();
             this.element.append(object);
+            const add = document.createElement("div");
+            add.classList.add("json-tool-btn");
+            add.innerText = "+";
+            this.element.append(add);
+            add.onclick = () => {
+                const key = prompt("Add new key?");
+                if (!!key) {
+                    const val = this.getValue();
+                    val[key] = null;
+                    this.setCurrentTypeValue(val);
+                    this.updateElement();
+                }
+            };
             this.element.append("}");
             this.element.append(this.createLineNumber());
             for (const key in val !== null && val !== void 0 ? val : {}) {
@@ -384,10 +435,7 @@ class JsonElement {
                     remove.classList.add("json-tool-btn");
                     remove.innerText = "∽";
                     remove.onclick = () => {
-                        const val = this.getValue();
-                        delete val[key];
-                        this.setCurrentTypeValue(val);
-                        this.updateElement();
+                        this.deleteChild(key);
                     };
                     buttons.append(remove);
                 }
@@ -396,31 +444,25 @@ class JsonElement {
                 for (const key in this.schema.properties) {
                     if (val === null || val === void 0 ? void 0 : val.hasOwnProperty(key))
                         continue;
-                    if ((_h = (_g = this.schema) === null || _g === void 0 ? void 0 : _g.required) === null || _h === void 0 ? void 0 : _h.includes(key)) {
-                        const obj = this.createObjectKeyValuePair(key, this.schema.properties[key]);
-                        object.append(obj);
-                    }
-                    else {
-                        const obj = this.createObjectKeyValuePair(key, this.schema.properties[key], undefined, true);
-                        object.append(obj);
-                        obj.style.textDecoration = "line-through 2px";
-                        const buttons = document.createElement("div");
-                        obj.prepend(buttons);
-                        buttons.classList.add("json-tool-btns");
-                        const add = document.createElement("div");
-                        add.classList.add("json-tool-btn");
-                        add.innerText = "≁";
-                        add.onclick = () => {
-                            var _a;
-                            if ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.properties) {
-                                const val = this.getValue();
-                                val[key] = JsonElement.getDefaultValue(this.schema.properties[key]).value;
-                                this.setCurrentTypeValue(val);
-                                this.updateElement();
-                            }
-                        };
-                        buttons.append(add);
-                    }
+                    const obj = this.createObjectKeyValuePair(key, this.schema.properties[key], undefined, true);
+                    object.append(obj);
+                    obj.style.textDecoration = "line-through 2px";
+                    const buttons = document.createElement("div");
+                    obj.prepend(buttons);
+                    buttons.classList.add("json-tool-btns");
+                    const add = document.createElement("div");
+                    add.classList.add("json-tool-btn");
+                    add.innerText = "≁";
+                    add.onclick = () => {
+                        var _a;
+                        if ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.properties) {
+                            const val = this.getValue();
+                            val[key] = JsonElement.getDefaultValue(this.schema.properties[key]).value;
+                            this.setCurrentTypeValue(val);
+                            this.updateElement();
+                        }
+                    };
+                    buttons.append(add);
                 }
             }
         }
@@ -438,23 +480,21 @@ class JsonElement {
             add.onclick = () => {
                 var _a, _b;
                 const val = [...this.getValue()];
-                if (val.length === ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.maxItems))
+                if (val.length === ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.maxItems) && !confirm(`This array is at max capacity - really add more?`))
                     return;
-                if ((_b = this.schema) === null || _b === void 0 ? void 0 : _b.items) {
-                    const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;
-                    val.push(defaultValue);
-                    this.currentType = type;
-                    this.setCurrentTypeValue(val);
-                    this.setIsOpened(true);
-                    this.updateElement();
-                }
+                const defaultValue = ((_b = this.schema) === null || _b === void 0 ? void 0 : _b.items) ? JsonElement.getDefaultValue(this.schema.items).value : null;
+                val.push(defaultValue);
+                this.currentType = type;
+                this.setCurrentTypeValue(val);
+                this.setIsOpened(true);
+                this.updateElement();
             };
             this.element.append("]");
             this.element.append(this.createLineNumber());
             const arr = val !== null && val !== void 0 ? val : [];
             for (let i = 0; i < arr.length; i++) {
                 const idx = i;
-                const obj = this.createObjectKeyValuePair(i, ((_j = this.schema) === null || _j === void 0 ? void 0 : _j.items) ? this.schema.items : null, val[i]);
+                const obj = this.createObjectKeyValuePair(i, ((_g = this.schema) === null || _g === void 0 ? void 0 : _g.items) ? this.schema.items : null, val[i]);
                 array.append(obj);
                 const buttons = document.createElement("div");
                 obj.prepend(buttons);
@@ -467,9 +507,7 @@ class JsonElement {
                     const arr = [...this.getValue()];
                     if (arr.length === ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.minItems))
                         return;
-                    arr.splice(idx, 1);
-                    this.setCurrentTypeValue(arr);
-                    this.updateElement();
+                    this.deleteChild(idx);
                 };
                 buttons.append(remove);
                 const up = document.createElement("div");
@@ -506,7 +544,7 @@ class JsonElement {
             this.element.append(checkbox);
         }
         else if (type === "string") {
-            if ((_k = this.schema) === null || _k === void 0 ? void 0 : _k.enum) {
+            if ((_h = this.schema) === null || _h === void 0 ? void 0 : _h.enum) {
                 const select = document.createElement("select");
                 for (const value of [...new Set(this.schema.enum.concat(val))]) {
                     const option = document.createElement("option");
@@ -520,17 +558,17 @@ class JsonElement {
                 };
                 this.element.append(select);
             }
-            else if (((_l = this.schema) === null || _l === void 0 ? void 0 : _l.format) === "textarea") {
+            else if (((_j = this.schema) === null || _j === void 0 ? void 0 : _j.format) === "textarea") {
                 const input = document.createElement("textarea");
                 input.value = val;
-                input.minLength = (_o = (_m = this.schema) === null || _m === void 0 ? void 0 : _m.minLength) !== null && _o !== void 0 ? _o : 0;
-                input.maxLength = (_q = (_p = this.schema) === null || _p === void 0 ? void 0 : _p.maxLength) !== null && _q !== void 0 ? _q : 99999999999999;
+                input.minLength = (_l = (_k = this.schema) === null || _k === void 0 ? void 0 : _k.minLength) !== null && _l !== void 0 ? _l : 0;
+                input.maxLength = (_o = (_m = this.schema) === null || _m === void 0 ? void 0 : _m.maxLength) !== null && _o !== void 0 ? _o : 99999999999999;
                 input.onchange = () => {
                     this.setCurrentTypeValue(input.value);
                 };
                 this.element.append(input);
             }
-            else if (((_r = this.schema) === null || _r === void 0 ? void 0 : _r.format) === "date") {
+            else if (((_p = this.schema) === null || _p === void 0 ? void 0 : _p.format) === "date") {
                 const input = document.createElement("input");
                 input.type = "date";
                 input.onchange = () => {
@@ -543,11 +581,11 @@ class JsonElement {
             else {
                 const input = document.createElement("input");
                 input.type = "text";
-                if (((_s = this.schema) === null || _s === void 0 ? void 0 : _s.format) && ["password", "email", "color", "url"].includes(this.schema.format))
+                if (((_q = this.schema) === null || _q === void 0 ? void 0 : _q.format) && ["password", "email", "color", "url"].includes(this.schema.format))
                     input.type = this.schema.format;
                 input.value = val;
-                input.minLength = (_u = (_t = this.schema) === null || _t === void 0 ? void 0 : _t.minLength) !== null && _u !== void 0 ? _u : 0;
-                input.maxLength = (_w = (_v = this.schema) === null || _v === void 0 ? void 0 : _v.maxLength) !== null && _w !== void 0 ? _w : 99999999999999;
+                input.minLength = (_s = (_r = this.schema) === null || _r === void 0 ? void 0 : _r.minLength) !== null && _s !== void 0 ? _s : 0;
+                input.maxLength = (_u = (_t = this.schema) === null || _t === void 0 ? void 0 : _t.maxLength) !== null && _u !== void 0 ? _u : 99999999999999;
                 input.onchange = () => {
                     this.setCurrentTypeValue(input.value);
                 };
@@ -561,8 +599,8 @@ class JsonElement {
             const input = document.createElement("input");
             input.type = "number";
             input.value = val.toString();
-            input.min = (_z = (_y = (_x = this.schema) === null || _x === void 0 ? void 0 : _x.minimum) === null || _y === void 0 ? void 0 : _y.toString()) !== null && _z !== void 0 ? _z : "";
-            input.max = (_2 = (_1 = (_0 = this.schema) === null || _0 === void 0 ? void 0 : _0.maximum) === null || _1 === void 0 ? void 0 : _1.toString()) !== null && _2 !== void 0 ? _2 : "";
+            input.min = (_x = (_w = (_v = this.schema) === null || _v === void 0 ? void 0 : _v.minimum) === null || _w === void 0 ? void 0 : _w.toString()) !== null && _x !== void 0 ? _x : "";
+            input.max = (_0 = (_z = (_y = this.schema) === null || _y === void 0 ? void 0 : _y.maximum) === null || _z === void 0 ? void 0 : _z.toString()) !== null && _0 !== void 0 ? _0 : "";
             if (JsonElement.isInteger(this.schema))
                 input.step = "1";
             input.onchange = () => {
@@ -631,7 +669,7 @@ class JsonElement {
         parent.append(": ");
         if (!noValue) {
             const valueElement = document.createElement("div");
-            const element = new JsonElement(`${this.path}.${originalKey}`, valueElement, schema, value, this);
+            const element = new JsonElement(originalKey, `${this.path}.${originalKey}`, valueElement, schema, value, this);
             if (this.currentType === "array")
                 this.arrayElements.push(element);
             else if (this.currentType === "object")

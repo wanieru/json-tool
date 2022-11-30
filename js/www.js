@@ -20,7 +20,7 @@ const person = tsch_1.tsch.object({
     pets: tsch_1.tsch.array(tsch_1.tsch.object({
         type: tsch_1.tsch.string().enumeration(["cat", "dog", "bird", "reptile", "other"]).default("dog"),
         name: tsch_1.tsch.string()
-    }).title("Pet")).unique().table().default([{ type: "dog", name: "Walter" }])
+    }).title("Pet")).unique().table().default([{ type: "dog", name: "Walter" }]).minElements(1).maxElements(3)
 }).title("Person");
 const personJsonSchema = person.getJsonSchemaProperty();
 const rootElement = document.querySelector("#root");

@@ -19,7 +19,7 @@ const person = tsch.object({
     pets: tsch.array(tsch.object({
         type: tsch.string().enumeration(["cat", "dog", "bird", "reptile", "other"]).default("dog"),
         name: tsch.string()
-    }).title("Pet")).unique().table().default([{ type: "dog", name: "Walter" }])
+    }).title("Pet")).unique().table().default([{ type: "dog", name: "Walter" }]).minElements(1).maxElements(3)
 }).title("Person");
 type Person = tsch.Infer<typeof person>;
 const personJsonSchema = person.getJsonSchemaProperty();

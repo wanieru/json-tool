@@ -7,6 +7,7 @@ interface JsonElementParent
     update(): void
     validate(): void
     getState(): Record<string, any>
+    deleteChild(key: string | number): void
 }
 
 export class JsonTool implements JsonElementParent
@@ -62,13 +63,11 @@ export class JsonTool implements JsonElementParent
 
     }
 
-    getPath(element: JsonElement): string
+    deleteChild(key: string | number): void
     {
-        return "root";
     }
     getState(): Record<string, any>
     {
-        console.log(this.elementState);
         return this.elementState;
     }
 
@@ -88,7 +87,7 @@ export class JsonTool implements JsonElementParent
         this.rootObject = document.createElement("div");
 
         this.root.appendChild(this.rootObject);
-        this.rootElement = new JsonElement("root", this.rootObject, schema, value, this);
+        this.rootElement = new JsonElement("", "root", this.rootObject, schema, value, this);
         this.validate();
     }
     public hide()
@@ -163,7 +162,7 @@ export class JsonTool implements JsonElementParent
                 opacity :1;
               }
               .json-tool-key > .json-tool-btns {
-                margin-left: -32px;
+                margin-left: -36px;
                 display: inline-block;
                 position: absolute;
                 width: 32px;
@@ -179,21 +178,24 @@ export class JsonTool implements JsonElementParent
                 display: inline-block;
                 margin-right: 2px;
               }
-              .json-tool-value > .json-tool-type
+              .json-tool-types > .json-tool-type
               {
-                float:right;
-                opacity: 0;
                 padding:0;
                 margin:0;
                 border:0;
               }
-              .json-tool-value.json-tool-object > .json-tool-type
+              .json-tool-value > .json-tool-types
+              {
+                float:right;
+                opacity: 0;
+              }
+              .json-tool-value.json-tool-object > .json-tool-types
               {
                 float:none;
                 position: absolute;
                 margin-left: 15px;
               }
-              .json-tool-value:hover > .json-tool-type
+              .json-tool-value:hover > .json-tool-types
               {
                 opacity: 1;
               }
@@ -248,14 +250,16 @@ class JsonElement implements JsonElementParent
 
     private parent: JsonElementParent;
     private path: string;
+    private key: string | number;
 
-    public constructor(path: string, element: HTMLDivElement, schema: JsonSchemaProperty | null, value: any, parent: JsonElementParent)
+    public constructor(key: string | number, path: string, element: HTMLDivElement, schema: JsonSchemaProperty | null, value: any, parent: JsonElementParent)
     {
         this.element = element;
         this.setStyle();
 
         this.schema = schema;
         this.parent = parent;
+        this.key = key;
         this.path = path;
 
         this.currentValues = {};
@@ -302,6 +306,23 @@ class JsonElement implements JsonElementParent
     getState(): Record<string, any>
     {
         return this.parent.getState();
+    }
+    deleteChild(key: string | number): void
+    {
+        if (typeof key === "string")
+        {
+            const val = this.getValue();
+            delete val[key];
+            this.setCurrentTypeValue(val);
+            this.updateElement();
+        }
+        else if (typeof key === "number")
+        {
+            const arr = [...this.getValue()];
+            arr.splice(key, 1);
+            this.setCurrentTypeValue(arr);
+            this.updateElement();
+        }
     }
 
     private setCurrentTypeValue(value: any)
@@ -429,7 +450,10 @@ class JsonElement implements JsonElementParent
         const type = this.currentType;
         const val = this.currentValues[type] ?? (this.currentValues[type] = JsonElement.getDefaultValueForType(this.schema, type));
 
-        if (this.types.length > 1)
+        const typeDiv = document.createElement("div");
+        typeDiv.classList.add("json-tool-types");
+        this.element.append(typeDiv);
+        if (this.types.length > 1 || type !== this.types[0])
         {
             const select = document.createElement("select");
             select.classList.add("json-tool-type");
@@ -445,8 +469,30 @@ class JsonElement implements JsonElementParent
             {
                 this.changeType(select.value);
             };
-            this.element.append(select);
+            typeDiv.append(select);
         }
+        const changeTypeButton = document.createElement("div");
+        changeTypeButton.classList.add("json-tool-btn");
+        changeTypeButton.style.display = "inline-block";
+        changeTypeButton.style.marginLeft = "5px";
+        changeTypeButton.innerText = "*";
+        changeTypeButton.onclick = () =>
+        {
+            const validTypes = ["object", "array", "boolean", "string", "number", "null", "undefined"];
+            const newType = window.prompt(`Enter new type:\n${validTypes.join(", ")}`) ?? "";
+            if (validTypes.includes(newType))
+            {
+                if (newType === "undefined")
+                {
+                    this.parent.deleteChild(this.key);
+                }
+                else
+                {
+                    this.changeType(newType);
+                }
+            }
+        }
+        typeDiv.append(changeTypeButton);
 
         if (type === "object")
         {
@@ -456,6 +502,23 @@ class JsonElement implements JsonElementParent
             this.element.append("{");
             const object = this.createBlock();
             this.element.append(object);
+
+            const add = document.createElement("div");
+            add.classList.add("json-tool-btn");
+            add.innerText = "+";
+            this.element.append(add);
+            add.onclick = () =>
+            {
+                const key = prompt("Add new key?");
+                if (!!key)
+                {
+                    const val = this.getValue();
+                    val[key] = null;
+                    this.setCurrentTypeValue(val);
+                    this.updateElement();
+                }
+            }
+
             this.element.append("}");
             this.element.append(this.createLineNumber());
 
@@ -488,10 +551,7 @@ class JsonElement implements JsonElementParent
                     remove.innerText = "∽";
                     remove.onclick = () =>
                     {
-                        const val = this.getValue();
-                        delete val[key];
-                        this.setCurrentTypeValue(val);
-                        this.updateElement();
+                        this.deleteChild(key);
                     };
                     buttons.append(remove);
                 }
@@ -503,36 +563,28 @@ class JsonElement implements JsonElementParent
                 for (const key in this.schema.properties)
                 {
                     if (val?.hasOwnProperty(key)) continue;
-                    if (this.schema?.required?.includes(key))
-                    {
-                        const obj = this.createObjectKeyValuePair(key, this.schema.properties[key]);
-                        object.append(obj);
-                    }
-                    else
-                    {
-                        const obj = this.createObjectKeyValuePair(key, this.schema.properties[key], undefined, true);
-                        object.append(obj);
-                        obj.style.textDecoration = "line-through 2px";
+                    const obj = this.createObjectKeyValuePair(key, this.schema.properties[key], undefined, true);
+                    object.append(obj);
+                    obj.style.textDecoration = "line-through 2px";
 
-                        const buttons = document.createElement("div");
-                        obj.prepend(buttons);
-                        buttons.classList.add("json-tool-btns");
+                    const buttons = document.createElement("div");
+                    obj.prepend(buttons);
+                    buttons.classList.add("json-tool-btns");
 
-                        const add = document.createElement("div");
-                        add.classList.add("json-tool-btn");
-                        add.innerText = "≁";
-                        add.onclick = () =>
+                    const add = document.createElement("div");
+                    add.classList.add("json-tool-btn");
+                    add.innerText = "≁";
+                    add.onclick = () =>
+                    {
+                        if (this.schema?.properties)
                         {
-                            if (this.schema?.properties)
-                            {
-                                const val = this.getValue();
-                                val[key] = JsonElement.getDefaultValue(this.schema.properties[key]).value;
-                                this.setCurrentTypeValue(val);
-                                this.updateElement();
-                            }
-                        };
-                        buttons.append(add);
-                    }
+                            const val = this.getValue();
+                            val[key] = JsonElement.getDefaultValue(this.schema.properties[key]).value;
+                            this.setCurrentTypeValue(val);
+                            this.updateElement();
+                        }
+                    };
+                    buttons.append(add);
                 }
             }
         }
@@ -552,16 +604,13 @@ class JsonElement implements JsonElementParent
             add.onclick = () =>
             {
                 const val = [...this.getValue()];
-                if (val.length === this.schema?.maxItems) return;
-                if (this.schema?.items)
-                {
-                    const defaultValue = JsonElement.getDefaultValue(this.schema.items).value;
-                    val.push(defaultValue);
-                    this.currentType = type;
-                    this.setCurrentTypeValue(val);
-                    this.setIsOpened(true);
-                    this.updateElement();
-                }
+                if (val.length === this.schema?.maxItems && !confirm(`This array is at max capacity - really add more?`)) return;
+                const defaultValue = this.schema?.items ? JsonElement.getDefaultValue(this.schema.items).value : null;
+                val.push(defaultValue);
+                this.currentType = type;
+                this.setCurrentTypeValue(val);
+                this.setIsOpened(true);
+                this.updateElement();
             }
 
             this.element.append("]");
@@ -585,9 +634,7 @@ class JsonElement implements JsonElementParent
                 {
                     const arr = [...this.getValue()];
                     if (arr.length === this.schema?.minItems) return;
-                    arr.splice(idx, 1);
-                    this.setCurrentTypeValue(arr);
-                    this.updateElement();
+                    this.deleteChild(idx);
                 };
                 buttons.append(remove);
 
@@ -779,7 +826,7 @@ class JsonElement implements JsonElementParent
         if (!noValue)
         {
             const valueElement = document.createElement("div");
-            const element = new JsonElement(`${this.path}.${originalKey}`, valueElement, schema, value, this);
+            const element = new JsonElement(originalKey, `${this.path}.${originalKey}`, valueElement, schema, value, this);
             if (this.currentType === "array") this.arrayElements.push(element);
             else if (this.currentType === "object") this.objectElements[originalKey] = element;
             parent.append(valueElement);
