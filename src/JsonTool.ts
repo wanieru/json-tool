@@ -10,7 +10,7 @@ interface JsonElementParent
     deleteChild(key: string | number): void
 }
 
-export class JsonTool implements JsonElementParent
+export class JsonTool
 {
     private containerElement: Element;
     private root: HTMLDivElement;
@@ -21,6 +21,12 @@ export class JsonTool implements JsonElementParent
     private schema: JsonSchemaProperty | null;
     private elementState: Record<string, any> = {};
     private validator: Validator;
+
+    private undoStack: any[] = [];
+    private redoStack: any[] = [];
+    private undoing = false;
+    private undoButton: HTMLButtonElement;
+    private redoButton: HTMLButtonElement;
 
     public constructor(element: Element, validator: Validator | null = null)
     {
@@ -40,6 +46,17 @@ export class JsonTool implements JsonElementParent
         this.errorMessages = document.createElement("div");
         this.errorMessages.classList.add("json-tool-errors");
 
+        const undoRedoButtons = document.createElement("div");
+        this.undoButton = document.createElement("button");
+        this.undoButton.innerText = "⤶ Undo";
+        this.undoButton.onclick = () => this.undo();
+        undoRedoButtons.appendChild(this.undoButton);
+        this.redoButton = document.createElement("button");
+        this.redoButton.innerText = "⤷ Redo";
+        this.redoButton.style.marginLeft = "5px";
+        this.redoButton.onclick = () => this.redo();
+        undoRedoButtons.appendChild(this.redoButton);
+
         const iframe = document.createElement("iframe");
 
         iframe.style.width = "100%";
@@ -54,6 +71,9 @@ export class JsonTool implements JsonElementParent
         iframe.onload = () => 
         {
             this.iframeBody = (iframe.contentDocument || iframe.contentWindow?.document)?.querySelector("body") as HTMLBodyElement;
+
+            this.iframeBody.append(undoRedoButtons);
+
             this.iframeBody.append(this.root);
             this.createCss(this.iframeBody);
 
@@ -63,15 +83,15 @@ export class JsonTool implements JsonElementParent
 
     }
 
-    deleteChild(key: string | number): void
+    private deleteChild(key: string | number): void
     {
     }
-    getState(): Record<string, any>
+    private getState(): Record<string, any>
     {
         return this.elementState;
     }
 
-    public load(schema: JsonSchemaProperty, value?: any, validator?: Validator)
+    public async load(schema: JsonSchemaProperty, value?: any, validator?: Validator)
     {
         this.validator = validator ?? this.validator;
         this.schema = schema;
@@ -87,8 +107,8 @@ export class JsonTool implements JsonElementParent
         this.rootObject = document.createElement("div");
 
         this.root.appendChild(this.rootObject);
-        this.rootElement = new JsonElement("", "root", this.rootObject, schema, value, this);
-        this.validate();
+        this.rootElement = new JsonElement("", "root", this.rootObject, this.schema, value, this as any as JsonElementParent);
+        await this.validate();
     }
     public hide()
     {
@@ -102,7 +122,7 @@ export class JsonTool implements JsonElementParent
     {
         return this.rootElement?.getValue();
     }
-    public update()
+    private async update()
     {
         if (!this.rootObject) return;
         let number = 1;
@@ -111,24 +131,66 @@ export class JsonTool implements JsonElementParent
             (e as HTMLElement).innerText = number.toString();
             number++;
         });
-        this.validate();
+        await this.validate();
     }
-    public validate()
+    private async validate()
     {
-        window.setTimeout(() =>
-        {
-            if (this.schema && this.errorMessages)
-            {
-                const valid = this.validator(this.getValue(), this.schema);
+        await new Promise<void>(resolve => window.setTimeout(resolve, 1));
+        if (!this.schema || !this.errorMessages) return;
 
-                this.errorMessages.innerHTML = "";
-                if (!valid.valid)
-                {
-                    this.errorMessages.innerHTML = (valid.errors ?? []).map(e => typeof e === "string" ? e : e.message).join("\n");
-                }
-            }
-        }, 1);
+        const valid = this.validator(this.getValue(), this.schema);
+
+        this.errorMessages.innerHTML = "";
+        if (!valid.valid)
+        {
+            this.errorMessages.innerHTML = (valid.errors ?? []).map(e => typeof e === "string" ? e : e.message).join("\n");
+        }
+        await this.pushUndoState();
     }
+    private async pushUndoState()
+    {
+        if (this.undoing) return;
+        this.undoing = true;
+        await new Promise<void>(resolve => window.setTimeout(resolve, 1));
+        const value = this.getValue();
+        if (this.undoStack.length > 0 && JSON.stringify(value) === JSON.stringify(this.undoStack[0]))
+        {
+            this.undoing = false;
+            return;
+        }
+        this.undoStack.unshift(value);
+        this.redoStack = [];
+        console.log(this.undoStack, this.redoStack);
+        this.undoing = false;
+        this.updateUndoRedoButtons();
+    }
+    private async undo()
+    {
+        if (this.undoStack.length < 2 || this.undoing || !this.schema) return;
+        this.undoing = true;
+        this.redoStack.unshift(this.getValue());
+        this.undoStack.splice(0, 1);
+        const value = this.undoStack[0];
+        await this.load(this.schema, value, this.validator);
+        this.undoing = false;
+        this.updateUndoRedoButtons();
+    }
+    private async redo()
+    {
+        if (this.redoStack.length < 1 || this.undoing || !this.schema) return;
+        this.undoing = true;
+        const value = this.redoStack.splice(0, 1)[0];
+        this.undoStack.unshift(value);
+        await this.load(this.schema, value, this.validator);
+        this.undoing = false;
+        this.updateUndoRedoButtons();
+    }
+    private updateUndoRedoButtons()
+    {
+        this.undoButton.disabled = this.undoStack.length < 2;
+        this.redoButton.disabled = this.redoStack.length < 1;
+    }
+
     private createCss(parent: Element)
     {
         const style = document.createElement("style");
@@ -537,10 +599,8 @@ class JsonElement implements JsonElementParent
                     remove.innerText = "X";
                     remove.onclick = () =>
                     {
-                        const val = this.getValue();
-                        delete val[key];
-                        this.setCurrentTypeValue(val);
-                        this.updateElement();
+                        if (!confirm(`Are you sure you want to delete the key ${key}?`)) return;
+                        this.deleteChild(key);
                     };
                     buttons.append(remove);
                 }
@@ -551,6 +611,7 @@ class JsonElement implements JsonElementParent
                     remove.innerText = "∽";
                     remove.onclick = () =>
                     {
+                        if (!confirm(`Are you sure you want to delete the key ${key}?`)) return;
                         this.deleteChild(key);
                     };
                     buttons.append(remove);
@@ -633,7 +694,12 @@ class JsonElement implements JsonElementParent
                 remove.onclick = () =>
                 {
                     const arr = [...this.getValue()];
-                    if (arr.length === this.schema?.minItems) return;
+                    if (arr.length === this.schema?.minItems)
+                    {
+                        alert(`${this.path} needs at least ${arr.length} elements.`);
+                        return;
+                    }
+                    if (!confirm(`Are you sure you want to delete element ${idx}?`)) return;
                     this.deleteChild(idx);
                 };
                 buttons.append(remove);

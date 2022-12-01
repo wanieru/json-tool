@@ -1,10 +1,22 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JsonTool = void 0;
 class JsonTool {
     constructor(element, validator = null) {
         var _a, _b;
         this.elementState = {};
+        this.undoStack = [];
+        this.redoStack = [];
+        this.undoing = false;
         this.containerElement = element;
         this.validator = validator !== null && validator !== void 0 ? validator : (() => { return { valid: true }; });
         this.schema = null;
@@ -16,6 +28,16 @@ class JsonTool {
         this.rootElement = null;
         this.errorMessages = document.createElement("div");
         this.errorMessages.classList.add("json-tool-errors");
+        const undoRedoButtons = document.createElement("div");
+        this.undoButton = document.createElement("button");
+        this.undoButton.innerText = "⤶ Undo";
+        this.undoButton.onclick = () => this.undo();
+        undoRedoButtons.appendChild(this.undoButton);
+        this.redoButton = document.createElement("button");
+        this.redoButton.innerText = "⤷ Redo";
+        this.redoButton.style.marginLeft = "5px";
+        this.redoButton.onclick = () => this.redo();
+        undoRedoButtons.appendChild(this.redoButton);
         const iframe = document.createElement("iframe");
         iframe.style.width = "100%";
         iframe.style.height = "100%";
@@ -29,6 +51,7 @@ class JsonTool {
         iframe.onload = () => {
             var _a, _b;
             this.iframeBody = (_b = (iframe.contentDocument || ((_a = iframe.contentWindow) === null || _a === void 0 ? void 0 : _a.document))) === null || _b === void 0 ? void 0 : _b.querySelector("body");
+            this.iframeBody.append(undoRedoButtons);
             this.iframeBody.append(this.root);
             this.createCss(this.iframeBody);
             this.iframeBody.appendChild(this.errorMessages);
@@ -40,19 +63,21 @@ class JsonTool {
         return this.elementState;
     }
     load(schema, value, validator) {
-        this.validator = validator !== null && validator !== void 0 ? validator : this.validator;
-        this.schema = schema;
-        this.root.innerHTML = "";
-        if (schema.title) {
-            const title = document.createElement("h3");
-            title.textContent = schema.title;
-            JsonElement.addDescription(title, schema.description, schema === null || schema === void 0 ? void 0 : schema.examples);
-            this.root.appendChild(title);
-        }
-        this.rootObject = document.createElement("div");
-        this.root.appendChild(this.rootObject);
-        this.rootElement = new JsonElement("", "root", this.rootObject, schema, value, this);
-        this.validate();
+        return __awaiter(this, void 0, void 0, function* () {
+            this.validator = validator !== null && validator !== void 0 ? validator : this.validator;
+            this.schema = schema;
+            this.root.innerHTML = "";
+            if (schema.title) {
+                const title = document.createElement("h3");
+                title.textContent = schema.title;
+                JsonElement.addDescription(title, schema.description, schema === null || schema === void 0 ? void 0 : schema.examples);
+                this.root.appendChild(title);
+            }
+            this.rootObject = document.createElement("div");
+            this.root.appendChild(this.rootObject);
+            this.rootElement = new JsonElement("", "root", this.rootObject, this.schema, value, this);
+            yield this.validate();
+        });
     }
     hide() {
         this.containerElement.innerHTML = "";
@@ -66,26 +91,77 @@ class JsonTool {
     }
     update() {
         var _a;
-        if (!this.rootObject)
-            return;
-        let number = 1;
-        (_a = this.rootObject) === null || _a === void 0 ? void 0 : _a.querySelectorAll(".line-number").forEach(e => {
-            e.innerText = number.toString();
-            number++;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.rootObject)
+                return;
+            let number = 1;
+            (_a = this.rootObject) === null || _a === void 0 ? void 0 : _a.querySelectorAll(".line-number").forEach(e => {
+                e.innerText = number.toString();
+                number++;
+            });
+            yield this.validate();
         });
-        this.validate();
     }
     validate() {
-        window.setTimeout(() => {
-            var _a;
-            if (this.schema && this.errorMessages) {
-                const valid = this.validator(this.getValue(), this.schema);
-                this.errorMessages.innerHTML = "";
-                if (!valid.valid) {
-                    this.errorMessages.innerHTML = ((_a = valid.errors) !== null && _a !== void 0 ? _a : []).map(e => typeof e === "string" ? e : e.message).join("\n");
-                }
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            yield new Promise(resolve => window.setTimeout(resolve, 1));
+            if (!this.schema || !this.errorMessages)
+                return;
+            const valid = this.validator(this.getValue(), this.schema);
+            this.errorMessages.innerHTML = "";
+            if (!valid.valid) {
+                this.errorMessages.innerHTML = ((_a = valid.errors) !== null && _a !== void 0 ? _a : []).map(e => typeof e === "string" ? e : e.message).join("\n");
             }
-        }, 1);
+            yield this.pushUndoState();
+        });
+    }
+    pushUndoState() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.undoing)
+                return;
+            this.undoing = true;
+            yield new Promise(resolve => window.setTimeout(resolve, 1));
+            const value = this.getValue();
+            if (this.undoStack.length > 0 && JSON.stringify(value) === JSON.stringify(this.undoStack[0])) {
+                this.undoing = false;
+                return;
+            }
+            this.undoStack.unshift(value);
+            this.redoStack = [];
+            console.log(this.undoStack, this.redoStack);
+            this.undoing = false;
+            this.updateUndoRedoButtons();
+        });
+    }
+    undo() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.undoStack.length < 2 || this.undoing || !this.schema)
+                return;
+            this.undoing = true;
+            this.redoStack.unshift(this.getValue());
+            this.undoStack.splice(0, 1);
+            const value = this.undoStack[0];
+            yield this.load(this.schema, value, this.validator);
+            this.undoing = false;
+            this.updateUndoRedoButtons();
+        });
+    }
+    redo() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.redoStack.length < 1 || this.undoing || !this.schema)
+                return;
+            this.undoing = true;
+            const value = this.redoStack.splice(0, 1)[0];
+            this.undoStack.unshift(value);
+            yield this.load(this.schema, value, this.validator);
+            this.undoing = false;
+            this.updateUndoRedoButtons();
+        });
+    }
+    updateUndoRedoButtons() {
+        this.undoButton.disabled = this.undoStack.length < 2;
+        this.redoButton.disabled = this.redoStack.length < 1;
     }
     createCss(parent) {
         const style = document.createElement("style");
@@ -423,10 +499,9 @@ class JsonElement {
                     remove.classList.add("json-tool-btn");
                     remove.innerText = "X";
                     remove.onclick = () => {
-                        const val = this.getValue();
-                        delete val[key];
-                        this.setCurrentTypeValue(val);
-                        this.updateElement();
+                        if (!confirm(`Are you sure you want to delete the key ${key}?`))
+                            return;
+                        this.deleteChild(key);
                     };
                     buttons.append(remove);
                 }
@@ -435,6 +510,8 @@ class JsonElement {
                     remove.classList.add("json-tool-btn");
                     remove.innerText = "∽";
                     remove.onclick = () => {
+                        if (!confirm(`Are you sure you want to delete the key ${key}?`))
+                            return;
                         this.deleteChild(key);
                     };
                     buttons.append(remove);
@@ -505,7 +582,11 @@ class JsonElement {
                 remove.onclick = () => {
                     var _a;
                     const arr = [...this.getValue()];
-                    if (arr.length === ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.minItems))
+                    if (arr.length === ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.minItems)) {
+                        alert(`${this.path} needs at least ${arr.length} elements.`);
+                        return;
+                    }
+                    if (!confirm(`Are you sure you want to delete element ${idx}?`))
                         return;
                     this.deleteChild(idx);
                 };

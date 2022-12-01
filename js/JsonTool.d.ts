@@ -5,13 +5,7 @@ export declare type Validator = (value: any, schema: JsonSchemaProperty) => {
         message: string;
     })[];
 };
-interface JsonElementParent {
-    update(): void;
-    validate(): void;
-    getState(): Record<string, any>;
-    deleteChild(key: string | number): void;
-}
-export declare class JsonTool implements JsonElementParent {
+export declare class JsonTool {
     private containerElement;
     private root;
     private rootObject;
@@ -21,15 +15,23 @@ export declare class JsonTool implements JsonElementParent {
     private schema;
     private elementState;
     private validator;
+    private undoStack;
+    private redoStack;
+    private undoing;
+    private undoButton;
+    private redoButton;
     constructor(element: Element, validator?: Validator | null);
-    deleteChild(key: string | number): void;
-    getState(): Record<string, any>;
-    load(schema: JsonSchemaProperty, value?: any, validator?: Validator): void;
+    private deleteChild;
+    private getState;
+    load(schema: JsonSchemaProperty, value?: any, validator?: Validator): Promise<void>;
     hide(): void;
     setValidator(validator: Validator): void;
     getValue(): any;
-    update(): void;
-    validate(): void;
+    private update;
+    private validate;
+    private pushUndoState;
+    private undo;
+    private redo;
+    private updateUndoRedoButtons;
     private createCss;
 }
-export {};

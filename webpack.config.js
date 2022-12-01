@@ -12,8 +12,6 @@ module.exports = {
         filename: '[name]',
         path: __dirname,
     },
-    resolve: {
-    },
-    watch: true,
+    resolve: {},
     devtool: "source-map"
 };

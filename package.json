@@ -1,12 +1,13 @@
 {
   "name": "@wanieru/json-tool",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Simple Json Editor using a Json Schema",
   "main": "index.js",
   "scripts": {
-    "build": "tsc --watch",
+    "watch": "tsc --watch",
+    "build": "npm i && tsc && webpack --mode=production",
     "webpack-p": "webpack --mode=production",
-    "webpack-d": "webpack --mode=development"
+    "webpack-d": "webpack --mode=development --watch"
   },
   "author": "wanieru",
   "license": "MIT",
