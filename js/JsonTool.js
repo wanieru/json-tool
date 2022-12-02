@@ -129,7 +129,6 @@ class JsonTool {
             }
             this.undoStack.unshift(value);
             this.redoStack = [];
-            console.log(this.undoStack, this.redoStack);
             this.undoing = false;
             this.updateUndoRedoButtons();
         });
@@ -379,13 +378,19 @@ class JsonElement {
         else if (schema.examples && schema.examples.length > 0) {
             return { type: this.getType(schema.examples[0]), value: schema.examples[0] };
         }
-        else {
+        else if (availableTypes.length > 0) {
             return { type: availableTypes[0], value: this.getDefaultValueForType(schema, availableTypes[0]) };
+        }
+        else {
+            return { type: "null", value: this.getDefaultValueForType(schema, "null") };
         }
     }
     static getDefaultValueForType(schema, type) {
         var _a, _b, _c;
-        if (type === "null") {
+        if (type === "json") {
+            return null;
+        }
+        else if (type === "null") {
             return null;
         }
         else if (type === "number") {
@@ -420,7 +425,7 @@ class JsonElement {
         }
     }
     updateElement() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4;
         this.objectElements = {};
         this.arrayElements = [];
         this.element.innerHTML = "";
@@ -454,7 +459,7 @@ class JsonElement {
         changeTypeButton.innerText = "*";
         changeTypeButton.onclick = () => {
             var _a;
-            const validTypes = ["object", "array", "boolean", "string", "number", "null", "undefined"];
+            const validTypes = ["object", "array", "boolean", "string", "number", "null", "undefined", "json"];
             const newType = (_a = window.prompt(`Enter new type:\n${validTypes.join(", ")}`)) !== null && _a !== void 0 ? _a : "";
             if (validTypes.includes(newType)) {
                 if (newType === "undefined") {
@@ -689,6 +694,26 @@ class JsonElement {
             };
             this.element.append(input);
         }
+        else if (type === "json") {
+            const input = document.createElement("textarea");
+            input.value = JSON.stringify(val, null, 3);
+            input.minLength = (_2 = (_1 = this.schema) === null || _1 === void 0 ? void 0 : _1.minLength) !== null && _2 !== void 0 ? _2 : 0;
+            input.maxLength = (_4 = (_3 = this.schema) === null || _3 === void 0 ? void 0 : _3.maxLength) !== null && _4 !== void 0 ? _4 : 99999999999999;
+            input.onchange = () => {
+                const json = input.value;
+                let value = null;
+                try {
+                    value = JSON.parse(json);
+                    this.setCurrentTypeValue(value);
+                    const actualType = JsonElement.getType(value);
+                    this.currentValues[actualType] = value;
+                }
+                catch (e) {
+                    alert("Couldn't parse JSON: " + e);
+                }
+            };
+            this.element.append(input);
+        }
         else {
             this.element.append(`[${type}] : ${val}`);
         }
@@ -761,8 +786,12 @@ class JsonElement {
     }
     changeType(type) {
         var _a;
+        const prevValue = this.getValue();
         this.currentType = type;
-        if (!this.currentValues.hasOwnProperty(type)) {
+        if (type === "json") {
+            this.setCurrentTypeValue(prevValue);
+        }
+        else if (!this.currentValues.hasOwnProperty(type)) {
             if (typeof ((_a = this.schema) === null || _a === void 0 ? void 0 : _a.default) !== "undefined" && JsonElement.getType(this.schema.default) === type)
                 this.setCurrentTypeValue(this.schema.default);
             else

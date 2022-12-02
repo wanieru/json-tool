@@ -160,7 +160,6 @@ export class JsonTool
         }
         this.undoStack.unshift(value);
         this.redoStack = [];
-        console.log(this.undoStack, this.redoStack);
         this.undoing = false;
         this.updateUndoRedoButtons();
     }
@@ -449,14 +448,22 @@ class JsonElement implements JsonElementParent
         {
             return { type: this.getType(schema.examples[0]), value: schema.examples[0] };
         }
-        else
+        else if (availableTypes.length > 0)
         {
             return { type: availableTypes[0], value: this.getDefaultValueForType(schema, availableTypes[0]) };
+        }
+        else
+        {
+            return { type: "null", value: this.getDefaultValueForType(schema, "null") };
         }
     }
     private static getDefaultValueForType(schema: JsonSchemaProperty | null, type: string)
     {
-        if (type === "null")
+        if (type === "json")
+        {
+            return null;
+        }
+        else if (type === "null")
         {
             return null;
         }
@@ -540,7 +547,7 @@ class JsonElement implements JsonElementParent
         changeTypeButton.innerText = "*";
         changeTypeButton.onclick = () =>
         {
-            const validTypes = ["object", "array", "boolean", "string", "number", "null", "undefined"];
+            const validTypes = ["object", "array", "boolean", "string", "number", "null", "undefined", "json"];
             const newType = window.prompt(`Enter new type:\n${validTypes.join(", ")}`) ?? "";
             if (validTypes.includes(newType))
             {
@@ -818,6 +825,30 @@ class JsonElement implements JsonElementParent
             }
             this.element.append(input);
         }
+        else if (type === "json")
+        {
+            const input = document.createElement("textarea");
+            input.value = JSON.stringify(val, null, 3);
+            input.minLength = this.schema?.minLength ?? 0;
+            input.maxLength = this.schema?.maxLength ?? 99999999999999;
+            input.onchange = () =>
+            {
+                const json = input.value;
+                let value = null;
+                try
+                {
+                    value = JSON.parse(json);
+                    this.setCurrentTypeValue(value);
+                    const actualType = JsonElement.getType(value);
+                    this.currentValues[actualType] = value;
+                }
+                catch (e)
+                {
+                    alert("Couldn't parse JSON: " + e);
+                }
+            }
+            this.element.append(input);
+        }
         else
         {
             this.element.append(`[${type}] : ${val}`);
@@ -901,8 +932,13 @@ class JsonElement implements JsonElementParent
     }
     private changeType(type: string)
     {
+        const prevValue = this.getValue();
         this.currentType = type;
-        if (!this.currentValues.hasOwnProperty(type))
+        if (type === "json")
+        {
+            this.setCurrentTypeValue(prevValue);
+        }
+        else if (!this.currentValues.hasOwnProperty(type))
         {
             if (typeof this.schema?.default !== "undefined" && JsonElement.getType(this.schema.default) === type)
                 this.setCurrentTypeValue(this.schema.default);
