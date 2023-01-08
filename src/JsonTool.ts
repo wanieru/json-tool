@@ -7,6 +7,7 @@ interface JsonElementParent
     update(): void
     validate(): void
     getState(): Record<string, any>
+    saveState(): void
     deleteChild(key: string | number): void
 }
 
@@ -30,6 +31,7 @@ export class JsonTool
 
     public constructor(element: Element, validator: Validator | null = null)
     {
+        this.loadState();
         this.containerElement = element;
         this.validator = validator ?? (() => { return { valid: true } });
         this.schema = null;
@@ -46,16 +48,29 @@ export class JsonTool
         this.errorMessages = document.createElement("div");
         this.errorMessages.classList.add("json-tool-errors");
 
-        const undoRedoButtons = document.createElement("div");
+        const controlButtons = document.createElement("div");
+
         this.undoButton = document.createElement("button");
         this.undoButton.innerText = "⤶ Undo";
         this.undoButton.onclick = () => this.undo();
-        undoRedoButtons.appendChild(this.undoButton);
+        controlButtons.appendChild(this.undoButton);
         this.redoButton = document.createElement("button");
         this.redoButton.innerText = "⤷ Redo";
         this.redoButton.style.marginLeft = "5px";
         this.redoButton.onclick = () => this.redo();
-        undoRedoButtons.appendChild(this.redoButton);
+        controlButtons.appendChild(this.redoButton);
+
+        const collapseExpandAll = document.createElement("button");
+        let collapse = true;
+        collapseExpandAll.innerText = "Collapse all";
+        collapseExpandAll.onclick = () =>
+        {
+            (this.rootObject?.querySelectorAll(`.json-tool-block.${collapse ? "opened" : "closed"} .json-tool-btn.collapse`) ?? []).forEach(e => (e as HTMLButtonElement).click())
+            collapse = !collapse;
+            collapseExpandAll.innerText = collapse ? "Collapse all" : "Expand all";
+        };
+        collapseExpandAll.style.marginLeft = "5px";
+        controlButtons.appendChild(collapseExpandAll);
 
         const iframe = document.createElement("iframe");
 
@@ -72,7 +87,7 @@ export class JsonTool
         {
             this.iframeBody = (iframe.contentDocument || iframe.contentWindow?.document)?.querySelector("body") as HTMLBodyElement;
 
-            this.iframeBody.append(undoRedoButtons);
+            this.iframeBody.append(controlButtons);
 
             this.iframeBody.append(this.root);
             this.createCss(this.iframeBody);
@@ -89,6 +104,16 @@ export class JsonTool
     private getState(): Record<string, any>
     {
         return this.elementState;
+    }
+    private saveState()
+    {
+        if (!window?.localStorage) return;
+        window.localStorage.setItem(`saved_json_tool_state`, JSON.stringify(this.elementState));
+    }
+    private loadState()
+    {
+        if (!window?.localStorage) return;
+        this.elementState = JSON.parse(window.localStorage.getItem(`saved_json_tool_state`) ?? "{}");
     }
 
     public async load(schema: JsonSchemaProperty, value?: any, validator?: Validator)
@@ -368,6 +393,10 @@ class JsonElement implements JsonElementParent
     {
         return this.parent.getState();
     }
+    saveState(): void
+    {
+        this.parent.saveState();
+    }
     deleteChild(key: string | number): void
     {
         if (typeof key === "string")
@@ -513,8 +542,8 @@ class JsonElement implements JsonElementParent
         this.element.style.display = "inline-block";
         this.element.classList.remove("json-tool-object");
 
-
-        this.element.append(this.createLineNumber());
+        if (this.path !== "root")
+            this.element.append(this.createLineNumber());
 
         const type = this.currentType;
         const val = this.currentValues[type] ?? (this.currentValues[type] = JsonElement.getDefaultValueForType(this.schema, type));
@@ -591,7 +620,12 @@ class JsonElement implements JsonElementParent
             this.element.append("}");
             this.element.append(this.createLineNumber());
 
-            for (const key in val ?? {})
+            const keyOrder = [] as string[];
+
+            for (const key in this.schema?.properties ?? {}) { if (val.hasOwnProperty(key)) keyOrder.push(key) };
+            for (const key in val ?? {}) { if (!keyOrder.includes(key)) keyOrder.push(key) };
+
+            for (const key of keyOrder)
             {
                 const obj = this.createObjectKeyValuePair(key, this.schema?.properties ? this.schema.properties[key] : null, val[key]);
                 object.append(obj);
@@ -623,8 +657,6 @@ class JsonElement implements JsonElementParent
                     };
                     buttons.append(remove);
                 }
-
-
             }
             if (this.schema?.properties)
             {
@@ -863,14 +895,21 @@ class JsonElement implements JsonElementParent
         if (overrideMargin) lineNumber.style.marginTop = "0";
         return lineNumber;
     }
-    private isOpened()
+    public isOpened()
     {
         return this.parent.getState()[`${this.path}_opened`] ?? true;
     }
     private setIsOpened(state: boolean)
     {
         this.parent.getState()[`${this.path}_opened`] = state;
+        this.parent.saveState();
     }
+    public recursiveSetOpened(state: boolean)
+    {
+        this.setIsOpened(state);
+        for (const child of [...this.arrayElements, ...Object.values(this.objectElements)]) child.recursiveSetOpened(state);
+    }
+
     private createBlock(): HTMLDivElement
     {
         const block = document.createElement("div");
@@ -884,6 +923,7 @@ class JsonElement implements JsonElementParent
         const collapse = document.createElement("div");
         if (this.path !== "root") block.append(collapse);
         collapse.classList.add("json-tool-btn");
+        collapse.classList.add("collapse");
         const updateOpened = (opened: boolean) =>
         {
             collapse.innerText = opened ? "ᐯ" : "ᐳ";
@@ -902,6 +942,7 @@ class JsonElement implements JsonElementParent
 
         return block;
     }
+
     private createObjectKeyValuePair(key: string | number, schema: JsonSchemaProperty | null, value?: any, noValue: boolean = false): HTMLDivElement
     {
         const parent = document.createElement("div");

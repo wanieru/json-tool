@@ -23,6 +23,8 @@ export declare class JsonTool {
     constructor(element: Element, validator?: Validator | null);
     private deleteChild;
     private getState;
+    private saveState;
+    private loadState;
     load(schema: JsonSchemaProperty, value?: any, validator?: Validator): Promise<void>;
     hide(): void;
     setValidator(validator: Validator): void;

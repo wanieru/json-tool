@@ -17,6 +17,7 @@ class JsonTool {
         this.undoStack = [];
         this.redoStack = [];
         this.undoing = false;
+        this.loadState();
         this.containerElement = element;
         this.validator = validator !== null && validator !== void 0 ? validator : (() => { return { valid: true }; });
         this.schema = null;
@@ -28,16 +29,27 @@ class JsonTool {
         this.rootElement = null;
         this.errorMessages = document.createElement("div");
         this.errorMessages.classList.add("json-tool-errors");
-        const undoRedoButtons = document.createElement("div");
+        const controlButtons = document.createElement("div");
         this.undoButton = document.createElement("button");
         this.undoButton.innerText = "⤶ Undo";
         this.undoButton.onclick = () => this.undo();
-        undoRedoButtons.appendChild(this.undoButton);
+        controlButtons.appendChild(this.undoButton);
         this.redoButton = document.createElement("button");
         this.redoButton.innerText = "⤷ Redo";
         this.redoButton.style.marginLeft = "5px";
         this.redoButton.onclick = () => this.redo();
-        undoRedoButtons.appendChild(this.redoButton);
+        controlButtons.appendChild(this.redoButton);
+        const collapseExpandAll = document.createElement("button");
+        let collapse = true;
+        collapseExpandAll.innerText = "Collapse all";
+        collapseExpandAll.onclick = () => {
+            var _a, _b;
+            ((_b = (_a = this.rootObject) === null || _a === void 0 ? void 0 : _a.querySelectorAll(`.json-tool-block.${collapse ? "opened" : "closed"} .json-tool-btn.collapse`)) !== null && _b !== void 0 ? _b : []).forEach(e => e.click());
+            collapse = !collapse;
+            collapseExpandAll.innerText = collapse ? "Collapse all" : "Expand all";
+        };
+        collapseExpandAll.style.marginLeft = "5px";
+        controlButtons.appendChild(collapseExpandAll);
         const iframe = document.createElement("iframe");
         iframe.style.width = "100%";
         iframe.style.height = "100%";
@@ -51,7 +63,7 @@ class JsonTool {
         iframe.onload = () => {
             var _a, _b;
             this.iframeBody = (_b = (iframe.contentDocument || ((_a = iframe.contentWindow) === null || _a === void 0 ? void 0 : _a.document))) === null || _b === void 0 ? void 0 : _b.querySelector("body");
-            this.iframeBody.append(undoRedoButtons);
+            this.iframeBody.append(controlButtons);
             this.iframeBody.append(this.root);
             this.createCss(this.iframeBody);
             this.iframeBody.appendChild(this.errorMessages);
@@ -61,6 +73,17 @@ class JsonTool {
     }
     getState() {
         return this.elementState;
+    }
+    saveState() {
+        if (!(window === null || window === void 0 ? void 0 : window.localStorage))
+            return;
+        window.localStorage.setItem(`saved_json_tool_state`, JSON.stringify(this.elementState));
+    }
+    loadState() {
+        var _a;
+        if (!(window === null || window === void 0 ? void 0 : window.localStorage))
+            return;
+        this.elementState = JSON.parse((_a = window.localStorage.getItem(`saved_json_tool_state`)) !== null && _a !== void 0 ? _a : "{}");
     }
     load(schema, value, validator) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -313,6 +336,9 @@ class JsonElement {
     getState() {
         return this.parent.getState();
     }
+    saveState() {
+        this.parent.saveState();
+    }
     deleteChild(key) {
         if (typeof key === "string") {
             const val = this.getValue();
@@ -425,13 +451,14 @@ class JsonElement {
         }
     }
     updateElement() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6;
         this.objectElements = {};
         this.arrayElements = [];
         this.element.innerHTML = "";
         this.element.style.display = "inline-block";
         this.element.classList.remove("json-tool-object");
-        this.element.append(this.createLineNumber());
+        if (this.path !== "root")
+            this.element.append(this.createLineNumber());
         const type = this.currentType;
         const val = (_a = this.currentValues[type]) !== null && _a !== void 0 ? _a : (this.currentValues[type] = JsonElement.getDefaultValueForType(this.schema, type));
         const typeDiv = document.createElement("div");
@@ -493,13 +520,24 @@ class JsonElement {
             };
             this.element.append("}");
             this.element.append(this.createLineNumber());
+            const keyOrder = [];
+            for (const key in (_c = (_b = this.schema) === null || _b === void 0 ? void 0 : _b.properties) !== null && _c !== void 0 ? _c : {}) {
+                if (val.hasOwnProperty(key))
+                    keyOrder.push(key);
+            }
+            ;
             for (const key in val !== null && val !== void 0 ? val : {}) {
-                const obj = this.createObjectKeyValuePair(key, ((_b = this.schema) === null || _b === void 0 ? void 0 : _b.properties) ? this.schema.properties[key] : null, val[key]);
+                if (!keyOrder.includes(key))
+                    keyOrder.push(key);
+            }
+            ;
+            for (const key of keyOrder) {
+                const obj = this.createObjectKeyValuePair(key, ((_d = this.schema) === null || _d === void 0 ? void 0 : _d.properties) ? this.schema.properties[key] : null, val[key]);
                 object.append(obj);
                 const buttons = document.createElement("div");
                 obj.prepend(buttons);
                 buttons.classList.add("json-tool-btns");
-                if (((_c = this.schema) === null || _c === void 0 ? void 0 : _c.properties) && !this.schema.properties.hasOwnProperty(key)) {
+                if (((_e = this.schema) === null || _e === void 0 ? void 0 : _e.properties) && !this.schema.properties.hasOwnProperty(key)) {
                     const remove = document.createElement("div");
                     remove.classList.add("json-tool-btn");
                     remove.innerText = "X";
@@ -510,7 +548,7 @@ class JsonElement {
                     };
                     buttons.append(remove);
                 }
-                else if (!((_e = (_d = this.schema) === null || _d === void 0 ? void 0 : _d.required) === null || _e === void 0 ? void 0 : _e.includes(key))) {
+                else if (!((_g = (_f = this.schema) === null || _f === void 0 ? void 0 : _f.required) === null || _g === void 0 ? void 0 : _g.includes(key))) {
                     const remove = document.createElement("div");
                     remove.classList.add("json-tool-btn");
                     remove.innerText = "∽";
@@ -522,7 +560,7 @@ class JsonElement {
                     buttons.append(remove);
                 }
             }
-            if ((_f = this.schema) === null || _f === void 0 ? void 0 : _f.properties) {
+            if ((_h = this.schema) === null || _h === void 0 ? void 0 : _h.properties) {
                 for (const key in this.schema.properties) {
                     if (val === null || val === void 0 ? void 0 : val.hasOwnProperty(key))
                         continue;
@@ -576,7 +614,7 @@ class JsonElement {
             const arr = val !== null && val !== void 0 ? val : [];
             for (let i = 0; i < arr.length; i++) {
                 const idx = i;
-                const obj = this.createObjectKeyValuePair(i, ((_g = this.schema) === null || _g === void 0 ? void 0 : _g.items) ? this.schema.items : null, val[i]);
+                const obj = this.createObjectKeyValuePair(i, ((_j = this.schema) === null || _j === void 0 ? void 0 : _j.items) ? this.schema.items : null, val[i]);
                 array.append(obj);
                 const buttons = document.createElement("div");
                 obj.prepend(buttons);
@@ -630,7 +668,7 @@ class JsonElement {
             this.element.append(checkbox);
         }
         else if (type === "string") {
-            if ((_h = this.schema) === null || _h === void 0 ? void 0 : _h.enum) {
+            if ((_k = this.schema) === null || _k === void 0 ? void 0 : _k.enum) {
                 const select = document.createElement("select");
                 for (const value of [...new Set(this.schema.enum.concat(val))]) {
                     const option = document.createElement("option");
@@ -644,17 +682,17 @@ class JsonElement {
                 };
                 this.element.append(select);
             }
-            else if (((_j = this.schema) === null || _j === void 0 ? void 0 : _j.format) === "textarea") {
+            else if (((_l = this.schema) === null || _l === void 0 ? void 0 : _l.format) === "textarea") {
                 const input = document.createElement("textarea");
                 input.value = val;
-                input.minLength = (_l = (_k = this.schema) === null || _k === void 0 ? void 0 : _k.minLength) !== null && _l !== void 0 ? _l : 0;
-                input.maxLength = (_o = (_m = this.schema) === null || _m === void 0 ? void 0 : _m.maxLength) !== null && _o !== void 0 ? _o : 99999999999999;
+                input.minLength = (_o = (_m = this.schema) === null || _m === void 0 ? void 0 : _m.minLength) !== null && _o !== void 0 ? _o : 0;
+                input.maxLength = (_q = (_p = this.schema) === null || _p === void 0 ? void 0 : _p.maxLength) !== null && _q !== void 0 ? _q : 99999999999999;
                 input.onchange = () => {
                     this.setCurrentTypeValue(input.value);
                 };
                 this.element.append(input);
             }
-            else if (((_p = this.schema) === null || _p === void 0 ? void 0 : _p.format) === "date") {
+            else if (((_r = this.schema) === null || _r === void 0 ? void 0 : _r.format) === "date") {
                 const input = document.createElement("input");
                 input.type = "date";
                 input.onchange = () => {
@@ -667,11 +705,11 @@ class JsonElement {
             else {
                 const input = document.createElement("input");
                 input.type = "text";
-                if (((_q = this.schema) === null || _q === void 0 ? void 0 : _q.format) && ["password", "email", "color", "url"].includes(this.schema.format))
+                if (((_s = this.schema) === null || _s === void 0 ? void 0 : _s.format) && ["password", "email", "color", "url"].includes(this.schema.format))
                     input.type = this.schema.format;
                 input.value = val;
-                input.minLength = (_s = (_r = this.schema) === null || _r === void 0 ? void 0 : _r.minLength) !== null && _s !== void 0 ? _s : 0;
-                input.maxLength = (_u = (_t = this.schema) === null || _t === void 0 ? void 0 : _t.maxLength) !== null && _u !== void 0 ? _u : 99999999999999;
+                input.minLength = (_u = (_t = this.schema) === null || _t === void 0 ? void 0 : _t.minLength) !== null && _u !== void 0 ? _u : 0;
+                input.maxLength = (_w = (_v = this.schema) === null || _v === void 0 ? void 0 : _v.maxLength) !== null && _w !== void 0 ? _w : 99999999999999;
                 input.onchange = () => {
                     this.setCurrentTypeValue(input.value);
                 };
@@ -685,8 +723,8 @@ class JsonElement {
             const input = document.createElement("input");
             input.type = "number";
             input.value = val.toString();
-            input.min = (_x = (_w = (_v = this.schema) === null || _v === void 0 ? void 0 : _v.minimum) === null || _w === void 0 ? void 0 : _w.toString()) !== null && _x !== void 0 ? _x : "";
-            input.max = (_0 = (_z = (_y = this.schema) === null || _y === void 0 ? void 0 : _y.maximum) === null || _z === void 0 ? void 0 : _z.toString()) !== null && _0 !== void 0 ? _0 : "";
+            input.min = (_z = (_y = (_x = this.schema) === null || _x === void 0 ? void 0 : _x.minimum) === null || _y === void 0 ? void 0 : _y.toString()) !== null && _z !== void 0 ? _z : "";
+            input.max = (_2 = (_1 = (_0 = this.schema) === null || _0 === void 0 ? void 0 : _0.maximum) === null || _1 === void 0 ? void 0 : _1.toString()) !== null && _2 !== void 0 ? _2 : "";
             if (JsonElement.isInteger(this.schema))
                 input.step = "1";
             input.onchange = () => {
@@ -697,8 +735,8 @@ class JsonElement {
         else if (type === "json") {
             const input = document.createElement("textarea");
             input.value = JSON.stringify(val, null, 3);
-            input.minLength = (_2 = (_1 = this.schema) === null || _1 === void 0 ? void 0 : _1.minLength) !== null && _2 !== void 0 ? _2 : 0;
-            input.maxLength = (_4 = (_3 = this.schema) === null || _3 === void 0 ? void 0 : _3.maxLength) !== null && _4 !== void 0 ? _4 : 99999999999999;
+            input.minLength = (_4 = (_3 = this.schema) === null || _3 === void 0 ? void 0 : _3.minLength) !== null && _4 !== void 0 ? _4 : 0;
+            input.maxLength = (_6 = (_5 = this.schema) === null || _5 === void 0 ? void 0 : _5.maxLength) !== null && _6 !== void 0 ? _6 : 99999999999999;
             input.onchange = () => {
                 const json = input.value;
                 let value = null;
@@ -732,6 +770,12 @@ class JsonElement {
     }
     setIsOpened(state) {
         this.parent.getState()[`${this.path}_opened`] = state;
+        this.parent.saveState();
+    }
+    recursiveSetOpened(state) {
+        this.setIsOpened(state);
+        for (const child of [...this.arrayElements, ...Object.values(this.objectElements)])
+            child.recursiveSetOpened(state);
     }
     createBlock() {
         const block = document.createElement("div");
@@ -743,6 +787,7 @@ class JsonElement {
         if (this.path !== "root")
             block.append(collapse);
         collapse.classList.add("json-tool-btn");
+        collapse.classList.add("collapse");
         const updateOpened = (opened) => {
             collapse.innerText = opened ? "ᐯ" : "ᐳ";
             block.classList.remove("opened", "closed");
