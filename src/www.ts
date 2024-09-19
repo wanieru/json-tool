@@ -1,5 +1,6 @@
 import { tsch } from "tsch";
 import { JsonTool } from "./JsonTool";
+import { GetSchemaFromHash } from "./getSchemaFromHash";
 
 const person = tsch.object({
     name: tsch.string().description("First and Last Name").minLength(4).maxLength(6).default("Jeremy Dorn").nullable(),
@@ -22,11 +23,20 @@ const person = tsch.object({
     }).title("Pet")).unique().table().default([{ type: "dog", name: "Walter" }]).minElements(1).maxElements(3)
 }).title("Person");
 type Person = tsch.Infer<typeof person>;
-const personJsonSchema = person.getJsonSchemaProperty();
+const val = GetSchemaFromHash() || { schema: person.getJsonSchemaProperty(), value: { test: 123 }, validate: true };
 const rootElement = document.querySelector("#root");
 if (rootElement)
 {
     const tool = new JsonTool(rootElement);
-    tool.load(personJsonSchema, { test: 123 }, v => person.validate(v));
+    tool.load(val.schema, val.value, v => (val as any).validate ? person.validate(v) : { valid: true });
     (window as any).getValue = () => tool.getValue();
+}
+const copyToClipboard: HTMLButtonElement | null = document.querySelector("button#copy-to-clipboard");
+if (copyToClipboard)
+{
+    copyToClipboard.onclick = () =>
+    {
+        navigator.clipboard.writeText(JSON.stringify((window as any).getValue(), null, 3));
+        alert("Copied!");
+    };
 }

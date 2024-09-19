@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const tsch_1 = require("tsch");
 const JsonTool_1 = require("./JsonTool");
+const getSchemaFromHash_1 = require("./getSchemaFromHash");
 const person = tsch_1.tsch.object({
     name: tsch_1.tsch.string().description("First and Last Name").minLength(4).maxLength(6).default("Jeremy Dorn").nullable(),
     age: tsch_1.tsch.number().integer().default(25).min(18).max(99).optional().title("Age").union(tsch_1.tsch.string()),
@@ -22,11 +23,18 @@ const person = tsch_1.tsch.object({
         name: tsch_1.tsch.string()
     }).title("Pet")).unique().table().default([{ type: "dog", name: "Walter" }]).minElements(1).maxElements(3)
 }).title("Person");
-const personJsonSchema = person.getJsonSchemaProperty();
+const val = (0, getSchemaFromHash_1.GetSchemaFromHash)() || { schema: person.getJsonSchemaProperty(), value: { test: 123 }, validate: true };
 const rootElement = document.querySelector("#root");
 if (rootElement) {
     const tool = new JsonTool_1.JsonTool(rootElement);
-    tool.load(personJsonSchema, { test: 123 }, v => person.validate(v));
+    tool.load(val.schema, val.value, v => val.validate ? person.validate(v) : { valid: true });
     window.getValue = () => tool.getValue();
+}
+const copyToClipboard = document.querySelector("button#copy-to-clipboard");
+if (copyToClipboard) {
+    copyToClipboard.onclick = () => {
+        navigator.clipboard.writeText(JSON.stringify(window.getValue(), null, 3));
+        alert("Copied!");
+    };
 }
 //# sourceMappingURL=www.js.map
